@@ -20,7 +20,7 @@
 6. Choose the default models and documents directory or specify your own.
 7. All done! start chatting about your documents with complete privacy.
 
-After this first setup, you will only need to start at step 5!
+After this first setup, you will only need to **start Ollama as explained in step 3**, and then go directly to step 5. 
 
 ## In the chat
 Simply type to chat with the LLM!  
@@ -41,3 +41,19 @@ As previously mentioned, the default models are `llama3`(8B) for the LLM, and `a
 * You have many documents and `all-minilm` is not cutting it? try `mxbai-embed-large` (334M).
 * Your documents are too big and `llama3` simply does not have a big enough context window (8K window)? Use `llama3-gradient`; also 8M parameters, but with a context window of over 1M!
 * `llama3` is too dumb? Go for `llama3:70b` if your computer can handle it!
+
+## Some prompts to try
+The `docs` folder contains some sample documents; a Markdown with a couple of recipes, a Python file with an implementation of the game Snake (and yes, you can play it!), and the RAGgamuffin file itself. Ask anything relating to these documents... or a webpage... or a YouTube video.   
+
+Here are some ideas to get you started:
+
+* `>> I am making croquettes, how should I shape them?`
+* `>> When does a game of snake ends?`
+* `>> What is RAGgamuffin?`
+* `>> /interwebs`  
+ `URL: https://www.youtube.com/watch?v=PtfatBOlHIA`  
+ `What do you want to know? >> What is this video about?`
+* `>> /interwebs`  
+ `URL: https://www.theverge.com/2024/5/22/24162429/scarlett-johansson-openai-legal-right-to-publicity-likeness-midler-lawyers`  
+ `What do you want to know? >> What is the main premise of the article?`
+

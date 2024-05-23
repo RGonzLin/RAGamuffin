@@ -29,6 +29,8 @@ Simply type to chat with the LLM!
 There are some magic words however. All of them start with a `/`, and allow you to perform special actions:
 * `/interwebs`: Provide a URL to a webpage or YouTube video and ask questions about it. 
 * `/system`: Provide a system prompt to change the behaviour of the LLM (i.e., "When reviewing code, explain what each function does thoroughly, yet in simple terms.").
+*  `/itshistory`: Clear the caht history.
+*  `/changellm`: Change the LLM model on the fly while preserving the chat history! Allows you to use the best model to handle the specific task at hand!
 * `/exit`: Quit the chat.
 * `/ragoff`: Disable RAG capabilities; for chatting about previously retrived documents or just having a normal conversation (ON by default).
 * `/ragon`: Enable RAG capabilities.

@@ -26,7 +26,7 @@ After this first setup, you will only need to **start Ollama as explained in ste
 ## In the chat
 Simply type to chat with the LLM!  
 
-There are some magic words however, all of them start with a `/`, and allow you to perform special actions:
+There are some magic words however. All of them start with a `/`, and allow you to perform special actions:
 * `/interwebs`: Provide a URL to a webpage or YouTube video and ask questions about it. 
 * `/system`: Provide a system prompt to change the behaviour of the LLM (i.e., "When reviewing code, explain what each function does thoroughly, yet in simple terms."
 * `/exit`: Quit the chat.

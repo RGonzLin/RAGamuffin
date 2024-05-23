@@ -20,7 +20,8 @@
 6. Choose the default models and documents directory or specify your own.
 7. All done! start chatting about your documents with complete privacy.
 
-After this first setup, you will only need to **start Ollama as explained in step 3**, and then go directly to step 5. 
+After this first setup, you will only need to **start Ollama as explained in step 3**, and then go directly to step 5.  
+
 
 ## In the chat
 Simply type to chat with the LLM!  
@@ -35,6 +36,8 @@ There are some magic words however, all of them start with a `/`, and allow you 
 * `/minscore`: Change the minimum cosine similarity (from -1 to most dissimilar to 1 for most similar) score to retrieve a document (0.0 by default).
 * `/ragdocsoff`: Disable printing the names of the documents used for RAG (ON by default).
 * `/ragdocson`: Enable printing the names of the documents used for RAG.
+
+An important detail: **Be patient!** Only full responses are shown; they are not streamed word-by-word as you may be used to.
 
 ## The models
 As previously mentioned, the default models are `llama3`(8B) for the LLM, and `all-minilm` (23M) for the embedding model. This are generally good choices, but you might consider some other models depending on your specific needs:

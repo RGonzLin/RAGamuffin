@@ -62,5 +62,5 @@ Here are some ideas to get you started:
  `What do you want to know? >> What is this video about?`
 * `>> /interwebs`  
  `URL: https://www.theverge.com/2024/5/22/24162429/scarlett-johansson-openai-legal-right-to-publicity-likeness-midler-lawyers`  
- `What do you want to know? >> What is the main premise of the article?`
+ `What do you want to know? >> What is happening between Scarlett Johansson and OpenAI?`
 

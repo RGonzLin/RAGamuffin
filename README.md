@@ -55,7 +55,7 @@ Here are some ideas to get you started:
 
 * `>> I am making croquettes, how should I shape them?`
 * `>> When does a game of snake ends?`
-* `>> What is RAGgamuffin?`
+* `>> What does /changellm do regarding RAGgamuffin?`
 * `>> /interwebs`  
  `URL: https://www.youtube.com/watch?v=PtfatBOlHIA`  
  `What do you want to know? >> What is this video about?`

@@ -36,7 +36,7 @@ There are some magic words however. All of them start with a `/`, and allow you 
 * `/ragoff`: Disable RAG capabilities; for chatting about previously retrived documents or just having a normal conversation (ON by default).
 * `/ragon`: Enable RAG capabilities.
 * `/kdocs`: Change the number of documents to be retrieved for RAG (1 by default).
-* `/minscore`: Change the minimum cosine similarity score (from -1 to most dissimilar to 1 for most similar) to retrieve a document (0.0 by default).
+* `/minscore`: Change the minimum cosine similarity score (from -1.0 for most dissimilar to 1.0 for most similar) to retrieve a document (0.0 by default).
 * `/ragdocsoff`: Disable printing the names of the documents used for RAG (ON by default).
 * `/ragdocson`: Enable printing the names of the documents used for RAG.
 

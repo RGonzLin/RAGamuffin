@@ -65,7 +65,7 @@ def extract_text_from_webpage(url):
 
 
 
-def main():
+def RAGgamuffin():
 
     default = input("Use default LLM (llama3), embedding model (all-minilm), and path (docs/)? (y/n): ")
 
@@ -219,10 +219,12 @@ def main():
                     similar_doc_names = [doc_names[i] for i in indices]
                     if rag_docs:
                         print(f'RAGged doc(s): {similar_doc_names}')
-                    # Concatenate the texts of the most similar documents spacing them with a newline
-                    similar_docs_text = '\n'.join([extract_text_from_txt(doc) for doc in similar_doc_names])
-                    # Concatenate the query and the text of the most similar documents
-                    user_input = user_input + '\n' + similar_docs_text
+                    # If there are similar documents
+                    if indices.size > 0:
+                        # Concatenate the texts of the most similar documents spacing them with a newline
+                        similar_docs_text = '\n'.join([extract_text_from_txt(doc) for doc in similar_doc_names])
+                        # Concatenate the query and the text of the most similar documents
+                        user_input = user_input + '\n' + similar_docs_text
 
             # If a weebpage was queried, skip this step
             if rag_flag:
@@ -247,4 +249,4 @@ def main():
                     
 
 if __name__ == "__main__":
-    main()
+    RAGgamuffin()

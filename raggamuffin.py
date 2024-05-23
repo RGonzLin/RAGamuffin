@@ -65,7 +65,7 @@ def extract_text_from_webpage(url):
 
 
 
-def main():
+def RAGgamuffin():
 
     default = input("Use default LLM (llama3), embedding model (all-minilm), and path (docs/)? (y/n): ")
 
@@ -249,4 +249,4 @@ def main():
                     
 
 if __name__ == "__main__":
-    main()
+    RAGgamuffin()

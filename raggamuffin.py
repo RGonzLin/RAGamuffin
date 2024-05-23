@@ -180,6 +180,18 @@ def RAGgamuffin():
                     })
             continue
 
+        # Clear the chat history
+        if user_input == "/itshistory":
+            history = []
+            print("Chat history cleared!")
+            continue
+
+        # Change LLM
+        if user_input == "/changellm":
+            llm = input("LLM: ")
+            print(f"Now using {llm}")
+            continue
+
         # Chat with the LLM
         else:
 

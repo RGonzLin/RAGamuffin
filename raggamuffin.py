@@ -148,7 +148,7 @@ def RAGgamuffin():
         # Change the number of documents to retrieve
         if user_input == "/kdocs":
             k_docs = int(input("Number of documents to retrieve: "))
-            print(f"Now the top {k_docs} documents will RAGged")
+            print(f"Now the top {k_docs} documents will be RAGged")
             continue
 
         # Change the minimum similarity score to retrieve a document
@@ -158,13 +158,13 @@ def RAGgamuffin():
             continue
 
         # Stop showing the documents retrieved by RAG
-        if user_input == "ragdocsoff":
+        if user_input == "/ragdocsoff":
             rag_docs = False
             print("Name of RAGged documents will not be shown")
             continue
 
         # Show the documents retrieved by RAG
-        if user_input == "ragdocson":
+        if user_input == "/ragdocson":
             rag_docs = True
             print("Name of RAGged documents will be shown")
             continue

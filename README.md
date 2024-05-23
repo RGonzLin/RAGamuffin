@@ -10,6 +10,7 @@
 * With the power of Retrieval-Augmented Generation (RAG), ask questions to the LLM about your documents... **LOCALLY!**
 * Toggle RAG on and off with a simple command.
 * Provide a link to a webpage or YouTube video and query the LLM regarding it.
+* Change LLMs on the fly without clearing the conversation history. 
 
 ## Get started 
 1. Download Ollama: `https://ollama.com`.

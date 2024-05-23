@@ -15,7 +15,7 @@
 1. Download Ollama: `https://ollama.com`.
 2. `pip install PyPDF2 faiss requests beautifulsoup4 youtube_transcript_api`.
 3. Start Ollama by clicking the App icon, this will not open any window but it will run on the background.
-4. Download some models by typing `ollama pull` followed by the name of the model, in the terminal (I recommend `llama3` for the LLM and `all-minilm` for the embedding model.)
+4. Download some models by typing `ollama pull` followed by the name of the model, in the terminal (I recommend `llama3` for the LLM and `all-minilm` for the embedding model).
 5. Run the script by typing `python raggamuffin.py`.
 6. Choose the default models and documents directory or specify your own.
 7. All done! start chatting about your documents with complete privacy.

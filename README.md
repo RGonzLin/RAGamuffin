@@ -41,7 +41,7 @@ An important detail: **Be patient!** Only full responses are shown; they are not
 
 ## The models
 The default models are `llama3` (8B) for the LLM, and `all-minilm` (23M) for the embedding model. These are generally good choices, but you might consider some other options depending on your specific needs:
-* You have many documents and `all-minilm` is not cutting it? try `mxbai-embed-large` (334M).
+* You have many documents and `all-minilm` is not cutting it? Try `mxbai-embed-large` (334M).
 * Your documents are too big and `llama3` simply does not have a big enough context window (8K tokens)? Use `llama3-gradient`; also 8M parameters, but with a context window of over 1M!
 * `llama3` is too dumb? Go for `llama3:70b` if your computer can handle it!
 * Too European to run one of them darn American models? `mistral` (7B) is for you!

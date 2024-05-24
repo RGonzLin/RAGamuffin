@@ -1,4 +1,4 @@
-# RAGgamuffin by Rodrigo González Linares
+# RAGamuffin by Rodrigo González Linares
 
 import ollama
 import os
@@ -65,7 +65,7 @@ def extract_text_from_webpage(url):
 
 
 
-def RAGgamuffin():
+def RAGamuffin():
 
     default = input("Use default LLM (llama3), embedding model (all-minilm), and path (docs/)? (y/n): ")
 
@@ -113,7 +113,7 @@ def RAGgamuffin():
     # Add vectors to the index
     index.add(doc_embeddings)
 
-    print("Done! Let's RAGgamuff!")
+    print("Done! Let's RAGamuff!")
 
     # Initialize parameters
     rag = True # RAG is on by default
@@ -148,7 +148,7 @@ def RAGgamuffin():
         # Change the number of documents to retrieve
         if user_input == "/kdocs":
             k_docs = int(input("Number of documents to retrieve: "))
-            print(f"Now the top {k_docs} documents will be RAGged")
+            print(f"Now the top {k_docs} documents will be RAGed")
             continue
 
         # Change the minimum similarity score to retrieve a document
@@ -160,13 +160,13 @@ def RAGgamuffin():
         # Stop showing the documents retrieved by RAG
         if user_input == "/ragdocsoff":
             rag_docs = False
-            print("Name of RAGged documents will not be shown")
+            print("Name of RAGed documents will not be shown")
             continue
 
         # Show the documents retrieved by RAG
         if user_input == "/ragdocson":
             rag_docs = True
-            print("Name of RAGged documents will be shown")
+            print("Name of RAGed documents will be shown")
             continue
 
         # Specify system prompt
@@ -230,7 +230,7 @@ def RAGgamuffin():
                     # Retrieve the texts of the most similar documents
                     similar_doc_names = [doc_names[i] for i in indices]
                     if rag_docs:
-                        print(f'RAGged doc(s): {similar_doc_names}')
+                        print(f'RAGed doc(s): {similar_doc_names}')
                     # If there are similar documents
                     if indices.size > 0:
                         # Concatenate the texts of the most similar documents spacing them with a newline
@@ -261,4 +261,4 @@ def RAGgamuffin():
                     
 
 if __name__ == "__main__":
-    RAGgamuffin()
+    RAGamuffin()

@@ -1,5 +1,5 @@
 <div align="center">
-<img src="https://github.com/RGonzLin/RAGgamuffin/assets/65770155/efb9d019-6971-4f88-8547-6463e8e5f8fe" alt="RAGgamuffin" width="500">
+<img src="https://github.com/RGonzLin/RAGamuffin/assets/65770155/caf10cbb-15aa-42d7-b4db-085265109999" alt="RAGamuffin" width="500">
 
   **A minimalistic and versatile RAG implementation built on top of Ollama, with a couple of tricks up its sleeve.**
 
@@ -17,7 +17,7 @@
 2. `pip install PyPDF2 faiss requests beautifulsoup4 youtube_transcript_api`.
 3. Start Ollama by clicking the App icon, this will not open any window but it will run on the background.
 4. Download some models by typing `ollama pull` followed by the name of the model, in the terminal (I recommend `llama3` for the LLM and `all-minilm` for the embedding model).
-5. Run the script by typing `python raggamuffin.py`.
+5. Run the script by typing `python ragamuffin.py`.
 6. Choose the default models and documents directory or specify your own.
 7. All done! start chatting about your documents with complete privacy.
 
@@ -50,13 +50,13 @@ The default models are `llama3` (8B) for the LLM, and `all-minilm` (23M) for the
 * Too European to run one of them darn American models? `mistral` (7B) is for you!
 
 ## Some prompts to try
-The `docs` folder contains some sample documents; a Markdown with a couple of recipes, a Python file with an implementation of the game Snake (and yes, you can play it!), and the RAGgamuffin file itself. Ask anything relating to these documents... or a webpage... or a YouTube video.   
+The `docs` folder contains some sample documents; a Markdown with a couple of recipes, a Python file with an implementation of the game Snake (and yes, you can play it!), and the RAGamuffin file itself. Ask anything relating to these documents... or a webpage... or a YouTube video.   
 
 Here are some ideas to get you started:
 
 * `>> I am making croquettes, how should I shape them?`
 * `>> When does a game of snake ends?`
-* `>> What does /changellm do regarding RAGgamuffin?`
+* `>> What does /changellm do regarding RAGamuffin?`
 * `>> /interwebs`  
  `URL: https://www.youtube.com/watch?v=PtfatBOlHIA`  
  `What do you want to know? >> What is this video about?`

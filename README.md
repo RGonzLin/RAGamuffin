@@ -56,11 +56,11 @@ Here are some ideas to get you started:
 * `>> When does a game of snake ends?`
 * `>> What does /changellm do regarding RAGamuffin?`
 * `>> /interwebs`  
+ `URL: https://www.quantamagazine.org/game-theory-can-make-ai-more-correct-and-efficient-20240509/`  
+ `What do you want to know? >> Summarize the article`  
+* `>> /interwebs`  
  `URL: https://www.youtube.com/watch?v=PtfatBOlHIA`  
  `What do you want to know? >> What is this video about?`
-* `>> /interwebs`  
- `URL: https://www.theverge.com/2024/5/22/24162429/scarlett-johansson-openai-legal-right-to-publicity-likeness-midler-lawyers`  
- `What do you want to know? >> What is happening between Scarlett Johansson and OpenAI?`  
 
 ## Note
 

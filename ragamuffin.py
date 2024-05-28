@@ -181,9 +181,7 @@ def RAGamuffin():
 
         # Specify system prompt
         if user_input == "/system":
-
             user_input = input("Add system prompt: ")
-
             history[0] = {
                     "role": "system",
                     "content": user_input,
@@ -192,7 +190,7 @@ def RAGamuffin():
 
         # Clear the chat history
         if user_input == "/itshistory":
-            history = []
+            history = history[0] # Keep the system prompt
             print("Chat history cleared!")
             continue
 

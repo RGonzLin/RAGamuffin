@@ -44,6 +44,7 @@ The default models are `llama3` (8B) for the LLM, and `all-minilm` (23M) for the
 * You have many documents and `all-minilm` is not cutting it? Try `mxbai-embed-large` (334M).
 * Your documents are too big and `llama3` simply does not have a big enough context window (8K tokens)? Use `llama3-gradient`; also 8M parameters, but with a context window of over 1M!
 * `llama3` is too dumb? Go for `llama3:70b` if your computer can handle it!
+* Need a tiny model due to hardware constraints? Go for `phi3:mini` (3B).  
 * Too European to run one of them darn American models? `mistral` (7B) is for you!
 
 Be mindful that smaller models, even when documents are able to fit within the context window, might not "remember" long-term information very well, nor perform adequately in needle-in-a-haystack-like tasks, compared to more capable models like GPT-4.

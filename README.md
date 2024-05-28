@@ -23,13 +23,11 @@
 
 After this first setup, you will only need to **start Ollama as explained in step 3**, and then go directly to step 5.  
 
-
 ## In the chat
 Simply type to chat with the LLM!  
 
 There are some magic words however. All of them start with a `/`, and allow you to perform special actions:
 * `/interwebs`: Provide a URL to a webpage or YouTube video and ask questions about it. 
-* `/system`: Provide a system prompt to change the behaviour of the LLM (i.e., "When reviewing code, explain what each function does thoroughly, yet in simple terms.").
 *  `/itshistory`: Clear the chat history.
 *  `/changellm`: Change the LLM model on the fly while preserving the chat history! Allows you to use the best model to handle the specific task at hand!
 * `/exit`: Quit the chat.
@@ -39,15 +37,17 @@ There are some magic words however. All of them start with a `/`, and allow you 
 * `/minscore`: Change the minimum cosine similarity score (from -1.0 for most dissimilar to 1.0 for most similar) to retrieve a document (0.0 by default).
 * `/ragdocsoff`: Disable printing the names of the documents used for RAG (ON by default).
 * `/ragdocson`: Enable printing the names of the documents used for RAG.
-
-An important detail: **Be patient!** Only full responses are shown; they are not streamed word-by-word as you may be used to.
+* `/system`: Provide a system prompt to change the behaviour of the LLM (i.e., "When reviewing code, explain what each function does thoroughly, yet in simple terms."). **†**
 
 ## The models
 The default models are `llama3` (8B) for the LLM, and `all-minilm` (23M) for the embedding model. These are generally good choices, but you might consider some other options depending on your specific needs:
 * You have many documents and `all-minilm` is not cutting it? Try `mxbai-embed-large` (334M).
 * Your documents are too big and `llama3` simply does not have a big enough context window (8K tokens)? Use `llama3-gradient`; also 8M parameters, but with a context window of over 1M!
 * `llama3` is too dumb? Go for `llama3:70b` if your computer can handle it!
+* Need a tiny model due to hardware constraints? Go for `phi3:mini` (3B).  
 * Too European to run one of them darn American models? `mistral` (7B) is for you!
+
+Be mindful that smaller models, even when documents are able to fit within the context window, might not "remember" long-term information very well, nor perform adequately in needle-in-a-haystack-like tasks, compared to more capable models like GPT-4.
 
 ## Some prompts to try
 The `docs` folder contains some sample documents; a Markdown with a couple of recipes, a Python file with an implementation of the game Snake (and yes, you can play it!), and the RAGamuffin file itself. Ask anything relating to these documents... or a webpage... or a YouTube video.   
@@ -58,9 +58,14 @@ Here are some ideas to get you started:
 * `>> When does a game of snake ends?`
 * `>> What does /changellm do regarding RAGamuffin?`
 * `>> /interwebs`  
+ `URL: https://www.quantamagazine.org/game-theory-can-make-ai-more-correct-and-efficient-20240509/`  
+ `What do you want to know? >> Summarize the article`  
+* `>> /interwebs`  
  `URL: https://www.youtube.com/watch?v=PtfatBOlHIA`  
  `What do you want to know? >> What is this video about?`
-* `>> /interwebs`  
- `URL: https://www.theverge.com/2024/5/22/24162429/scarlett-johansson-openai-legal-right-to-publicity-likeness-midler-lawyers`  
- `What do you want to know? >> What is happening between Scarlett Johansson and OpenAI?`
 
+## Note
+
+**†** The deafault system prompt is:  
+
+"You are RAGamuffin, a Retrieval-Augmented Generation (RAG) agent, that can also retrieve text from webpages or YouTube videos when a link is provided. You will be provided content in one of two different formats. When RAGing documents, the format will be: 'user_query \n <<document1_name><document1_text>> \n <<document2_name><document2_text>> ...'. When querying a webpage or a YouTube video, the format will be: 'user_query \n <webpage_text>'. Your objective is to generate a response based on the user query and the retrieved document(s), webpage text, or video transcript."

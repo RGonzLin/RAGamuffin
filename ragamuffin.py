@@ -113,7 +113,7 @@ def RAGamuffin():
     # Add vectors to the index
     index.add(doc_embeddings)
 
-    print("Done! Let's RAGamuff!")
+    print("Done! Let's RAG!")
 
     # Initialize parameters
     rag = True # RAG is on by default
@@ -121,7 +121,17 @@ def RAGamuffin():
     min_score = 0.0 # Minimum similarity score to retrieve a document, orthogonal by default
     rag_docs = True # Show the documents retrieved by RAG if True
     rag_flag = True # Flag to momentarily turn off RAG
-    history = [] # Chat history
+    history = [{
+                "role": "system",
+                "content": "You are RAGamuffin, a Retrieval-Augmented Generation (RAG) agent, "
+                "that can also retrieve text from webpages or YouTube videos when a link is provided. "
+                "You will be provided content in one of two different formats. "
+                "When RAGing documents, the format will be: 'user_query \n <<document1_name><document1_text>> \n"
+                "<<document2_name><document2_text>> ...'. "
+                "When querying a webpage or a YouTube video, the format will be: 'user_query \n <webpage_text>'. "
+                "Your objective is to generate a response based on the user query and the retrieved document(s), "
+                "webpage text, or video transcript."
+                }] # Chat history
 
     while True:
 
@@ -174,10 +184,10 @@ def RAGamuffin():
 
             user_input = input("Add system prompt: ")
 
-            history.append({
+            history[0] = {
                     "role": "system",
                     "content": user_input,
-                    })
+                    }
             continue
 
         # Clear the chat history
@@ -200,7 +210,7 @@ def RAGamuffin():
                 url = input("URL: ")
                 user_input = input("What do you want to know? >> ")
                 web_text = extract_text_from_webpage(url)
-                augmented_input = user_input + '\n' + web_text
+                augmented_input = user_input + '\n' + f'<{web_text}>'
                 history.append({
                         "role": "user",
                         "content": augmented_input,
@@ -234,7 +244,7 @@ def RAGamuffin():
                     # If there are similar documents
                     if indices.size > 0:
                         # Concatenate the texts of the most similar documents spacing them with a newline
-                        similar_docs_text = '\n'.join([extract_text_from_txt(doc) for doc in similar_doc_names])
+                        similar_docs_text = '\n'.join([f'<<{doc}>{extract_text_from_txt(doc)}>>' for doc in similar_doc_names])
                         # Concatenate the query and the text of the most similar documents
                         user_input = user_input + '\n' + similar_docs_text
 
@@ -249,15 +259,16 @@ def RAGamuffin():
             rag_flag = True
                 
             # Get the response with the LLM
-            response = ollama.chat(model = llm, messages = history)
-            print(response['message']['content'])
+            response = ollama.chat(model = llm, messages = history, stream = True)
+            for chunk in response:
+                print(chunk['message']['content'], end='', flush=True)
             print("")
 
-            # Append the response to the history
-            history.append({
-                "role": "assistant",
-                "content": response['message']['content']
-                    })
+            for chunk in response:
+                history.append({
+                    "role": "assistant",
+                    "content": chunk['message']['content']
+                })
                     
 
 if __name__ == "__main__":

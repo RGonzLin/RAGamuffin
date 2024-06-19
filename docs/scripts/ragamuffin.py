@@ -1,4 +1,4 @@
-# RAGamuffin by Rodrigo González Linares
+ # RAGamuffin by Rodrigo González Linares
 
 import ollama
 import os
@@ -8,7 +8,8 @@ import numpy as np
 import requests
 from bs4 import BeautifulSoup
 from youtube_transcript_api import YouTubeTranscriptApi
-
+from googlesearch import search
+import itertools
 
 
 def extract_text_from_txt(txt_path):
@@ -63,22 +64,7 @@ def extract_text_from_webpage(url):
 
     return text
 
-
-
-def RAGamuffin():
-
-    default = input("Use default LLM (llama3), embedding model (all-minilm), and path (docs/)? (y/n): ")
-
-    if default == "y":
-        llm = "llama3"
-        embedding_model = "all-minilm"
-        docu_path = "docs/"
-    
-    else:
-        # Get the user to setup the models and the documents path
-        llm = input("LLM: ")
-        embedding_model = input("Embedding model: ")
-        docu_path = input("Path to documents : ")
+def rag(docu_path,embedding_model):
 
     print("Extracting texts")
 
@@ -115,22 +101,94 @@ def RAGamuffin():
 
     print("Done! Let's RAG!")
 
+    return index, doc_names
+
+def rag_query(embedding_model, index, doc_names, user_input, k_docs, min_score):
+
+    # Embed the user input and normalize it
+    query = ollama.embeddings(model=embedding_model, prompt=user_input)['embedding']
+
+    # Check the query is not empty
+    if query:
+
+        # Process the query
+        query = np.array([query], dtype=np.float32)
+        faiss.normalize_L2(query)
+
+        # Search for the most similar documents
+        distances, indices = index.search(query, k_docs)
+
+        # Filter out documents with similarity scores below the threshold
+        indices = indices[0][distances[0] > min_score]
+
+        # Retrieve the texts of the most similar documents
+        similar_doc_names = [doc_names[i] for i in indices]
+        # If there are similar documents
+        if indices.size > 0:
+            # Concatenate the texts of the most similar documents spacing them with a newline
+            similar_docs_text = '\n'.join([f'<<{doc}><{extract_text_from_txt(doc)}>>' for doc in similar_doc_names])
+            # Concatenate the query and the text of the most similar documents
+            user_input = user_input + '\n' + similar_docs_text
+
+    return similar_doc_names, user_input
+
+def web_search(query, num_web_results):
+    
+        # Search for top n Google results
+        search_results = search(query, num_results=num_web_results)
+    
+        # Extract text from the webpages
+        web_page_names = []
+        texts = query
+        for result in itertools.islice(search_results, num_web_results):
+            web_page_names.append(result)
+            text = extract_text_from_webpage(result)
+            texts += '\n' + f'<<{result}><{text}>>'
+
+        return web_page_names, texts
+
+
+def RAGamuffin():
+
+    default = input("Use default LLM (llama3), embedding model (all-minilm), and path (docs/)? ([y]/n): ")
+
+    if default == "n":
+        # Get the user to setup the models and the documents path
+        llm = input("LLM: ")
+        embedding_model = input("Embedding model: ")
+        docu_path = input("Path to documents : ")
+    
+    else:
+        llm = "llama3"
+        embedding_model = "all-minilm"
+        docu_path = "docs/"
+
+    mode = input("Do you want to start the conversation in RAG, web search or conversational mode? ([rag]/web/conv): ")
+
+    if mode != "web" and mode != "conv":
+        mode = "rag"
+
+    indexing_done = False
+    if mode == "rag":
+        index, doc_names = rag(docu_path,embedding_model)
+        indexing_done = True
+
     # Initialize parameters
-    rag = True # RAG is on by default
     k_docs = 1 # Number of documents to retrieve
     min_score = 0.0 # Minimum similarity score to retrieve a document, orthogonal by default
     rag_docs = True # Show the documents retrieved by RAG if True
-    rag_flag = True # Flag to momentarily turn off RAG
+    num_web_results = 1 # Number of web results to retrieve
+    web_docs = True # Show the webpages retrieved by web search if True
     history = [{
                 "role": "system",
                 "content": "You are RAGamuffin, a Retrieval-Augmented Generation (RAG) agent, "
-                "that can also retrieve text from webpages or YouTube videos when a link is provided. "
-                "You will be provided content in one of two different formats. "
-                "When RAGing documents, the format will be: 'user_query \n <<document1_name><document1_text>> \n"
+                "that can also search the web, or retrieve text from specific webpages or YouTube videos when a link is provided. "
+                "You will be provided content in the following format: \n"
+                "'user_query \n <<document1_name><document1_text>> \n"
                 "<<document2_name><document2_text>> ...'. "
-                "When querying a webpage or a YouTube video, the format will be: 'user_query \n <webpage_text>'. "
                 "Your objective is to generate a response based on the user query and the retrieved document(s), "
-                "webpage text, or video transcript."
+                "webpage text, or video transcript. If no such resources are provided, you will simply hold a conversation based"
+                "on the chat history."
                 }] # Chat history
 
     while True:
@@ -143,44 +201,71 @@ def RAGamuffin():
             print("Bye!")
             break
 
-        # Turn RAG off
-        if user_input == "/ragoff":
-            rag = False
-            print("RAG OFF")
+        # Turn RAG on
+        elif user_input == "/rag":
+            mode = "rag"
+            print("RAG ON")
+            if indexing_done == False:
+                index, doc_names = rag(docu_path,embedding_model)
+                indexing_done = True
             continue
 
-        # Turn RAG on
-        if user_input == "/ragon":
-            rag = True
-            print("RAG ON")
+        # Turn web search on
+        elif user_input == "/web":
+            mode = "web"
+            print("Web search ON")
+            continue
+
+        # Turn conversational mode on
+        elif user_input == "/conv":
+            mode = "conv"
+            print("Conversational mode ON")
             continue
 
         # Change the number of documents to retrieve
-        if user_input == "/kdocs":
+        elif user_input == "/kdocs":
             k_docs = int(input("Number of documents to retrieve: "))
             print(f"Now the top {k_docs} documents will be RAGed")
             continue
 
         # Change the minimum similarity score to retrieve a document
-        if user_input == "/minscore":
+        elif user_input == "/minscore":
             min_score = float(input("Minimum similarity score to retrieve a document: "))
             print(f"Now the minimum similarity score is {min_score}")
             continue
 
         # Stop showing the documents retrieved by RAG
-        if user_input == "/ragdocsoff":
+        elif user_input == "/ragdocsoff":
             rag_docs = False
             print("Name of RAGed documents will not be shown")
             continue
 
         # Show the documents retrieved by RAG
-        if user_input == "/ragdocson":
+        elif user_input == "/ragdocson":
             rag_docs = True
             print("Name of RAGed documents will be shown")
             continue
 
+        # Change the number of web results to retrieve
+        elif user_input == "/kweb":
+            num_web_results = int(input("Number of web results to retrieve: "))
+            print(f"Now the top {num_web_results} web results will be used")
+            continue
+
+        # Stop showing the webpages retrieved by web search
+        elif user_input == "/webdocsoff":
+            web_docs = False
+            print("Webpages retrieved by web search will not be shown")
+            continue
+
+        # Show the webpages retrieved by web search
+        elif user_input == "/webdocson":
+            web_docs = True
+            print("Webpages retrieved by web search will be shown")
+            continue
+
         # Specify system prompt
-        if user_input == "/system":
+        elif user_input == "/system":
             user_input = input("Add system prompt: ")
             history[0] = {
                     "role": "system",
@@ -189,13 +274,13 @@ def RAGamuffin():
             continue
 
         # Clear the chat history
-        if user_input == "/itshistory":
+        elif user_input == "/itshistory":
             history = history[0] # Keep the system prompt
             print("Chat history cleared!")
             continue
 
         # Change LLM
-        if user_input == "/changellm":
+        elif user_input == "/changellm":
             llm = input("LLM: ")
             print(f"Now using {llm}")
             continue
@@ -208,66 +293,52 @@ def RAGamuffin():
                 url = input("URL: ")
                 user_input = input("What do you want to know? >> ")
                 web_text = extract_text_from_webpage(url)
-                augmented_input = user_input + '\n' + f'<{web_text}>'
-                history.append({
-                        "role": "user",
-                        "content": augmented_input,
-                        })
-                # Momentarily turn off RAG
-                rag_flag = False
+                user_input = user_input + '\n' + f'<<{url}><{web_text}>>'
 
-            
-            if rag and rag_flag:
+            # Perform RAG if the RAG mode is on
+            elif mode == "rag":
                 
-                # Embed the user input and normalize it
-                query = ollama.embeddings(model = embedding_model, prompt = user_input)['embedding']
+                # Perform the RAG query
+                similar_doc_names, user_input = rag_query(embedding_model, index, doc_names, user_input, k_docs, min_score)
 
-                # Check the query is not empty
-                if query:
+                # Show the documents retrieved if the flag is on
+                if rag_docs:
+                    print(f'RAGed doc(s): {similar_doc_names}')
+                    print("")
 
-                    # Process the query
-                    query = np.array([query], dtype=np.float32)
-                    faiss.normalize_L2(query)
+            # Query the web if the web search mode is on
+            elif mode == "web":
 
-                    # Search for the most similar documents
-                    distances, indices = index.search(query, k_docs)
+                # Search the web
+                web_page_names, user_input = web_search(user_input, num_web_results)
 
-                    # Filter out documents with similarity scores below the threshold
-                    indices = indices[0][distances[0] > min_score]
+                # Show the webpages retrieved if the flag is on
+                if web_docs:
+                    print(f'Googled webpage(s): {web_page_names}')
+                    print("")
 
-                    # Retrieve the texts of the most similar documents
-                    similar_doc_names = [doc_names[i] for i in indices]
-                    if rag_docs:
-                        print(f'RAGed doc(s): {similar_doc_names}')
-                    # If there are similar documents
-                    if indices.size > 0:
-                        # Concatenate the texts of the most similar documents spacing them with a newline
-                        similar_docs_text = '\n'.join([f'<<{doc}>{extract_text_from_txt(doc)}>>' for doc in similar_doc_names])
-                        # Concatenate the query and the text of the most similar documents
-                        user_input = user_input + '\n' + similar_docs_text
-
-            # If a weebpage was queried, skip this step
-            if rag_flag:
-                # Append the user input to the history
-                history.append({
+            # Append the user input to the history
+            history.append({
                     "role": "user",
                     "content": user_input,
                     })
-            # Turn on the rag flag in case it was turned off
-            rag_flag = True
                 
             # Get the response with the LLM
             response = ollama.chat(model = llm, messages = history, stream = True)
+
+            # Print the response and concatenate the chunks
+            response_content = ""
             for chunk in response:
-                print(chunk['message']['content'], end='', flush=True)
+                chunk_content = chunk['message']['content']
+                print(chunk_content, end='', flush=True)
+                response_content += chunk_content
             print("")
 
-            for chunk in response:
-                history.append({
-                    "role": "assistant",
-                    "content": chunk['message']['content']
-                })
-                    
+            # Append the entire response as a single message
+            history.append({
+                "role": "assistant",
+                "content": response_content
+            })
 
 if __name__ == "__main__":
     RAGamuffin()

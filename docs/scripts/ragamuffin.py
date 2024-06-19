@@ -275,7 +275,7 @@ def RAGamuffin():
 
         # Clear the chat history
         elif user_input == "/itshistory":
-            history = history[0] # Keep the system prompt
+            history = [history[0]] # Keep the system prompt
             print("Chat history cleared!")
             continue
 

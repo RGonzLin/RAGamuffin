@@ -1,7 +1,7 @@
 <div align="center">
 <img src="https://github.com/RGonzLin/RAGamuffin/assets/65770155/caf10cbb-15aa-42d7-b4db-085265109999" alt="RAGamuffin" width="500">
 
-  **A minimalistic and versatile RAG implementation built on top of Ollama, that can also search the web**
+  **A minimalistic and versatile RAG implementation built on top of Ollama, that can also search the web.**
 
 </div>
 

@@ -81,7 +81,7 @@ Here are some ideas to get you started:
 After searching the web for a while under normal use, you might encounter a 'too many requests' HTTP error from Google. This can be easily circumvented by switching IPs using a VPN.
 
 ### Upcoming planned features
-* PDF support
+* PDF support.
 * Include a magic word so that users can add new UTF-8 encoded document extensions to be processed by RAG. Without modifying the Python script, the extensions '.txt', '.md', '.py', '.sh', and '.js' will be processed by RAG in this current version.
 
 

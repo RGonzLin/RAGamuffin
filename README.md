@@ -65,7 +65,7 @@ Here are some ideas to get you started:
 * `>> What does /changellm do regarding RAGamuffin?`
 
 ### When in web search mode
-* `>> What are the working principles of liquid neural networks?`
+* `>> What are the most important news stories of today?`
 
 ### When providing a specific URL
 * `>> /interwebs`  

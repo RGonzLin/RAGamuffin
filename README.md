@@ -65,7 +65,7 @@ Here are some ideas to get you started:
 * `>> What does /changellm do regarding RAGamuffin?`
 
 ### When in web search mode
-* `>> What are the working principles of liquid neural networks?`
+* `>> What are the most important news stories of today?`
 
 ### When providing a specific URL
 * `>> /interwebs`  
@@ -81,6 +81,7 @@ Here are some ideas to get you started:
 After searching the web for a while under normal use, you might encounter a 'too many requests' HTTP error from Google. This can be easily circumvented by switching IPs using a VPN.
 
 ### Upcoming planned features
+* An 'Automatic Mode' which intelligently determines the best response method (RAG, web search or conversation) based on the user's query.
 * PDF support.
 * Include a magic word so that users can add new UTF-8 encoded document extensions to be processed by RAG. Without modifying the Python script, the extensions '.txt', '.md', '.py', '.sh', and '.js' will be processed by RAG in this current version.
 

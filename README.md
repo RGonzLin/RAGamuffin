@@ -39,7 +39,7 @@ There are some magic words however. All of them start with a `/`, and allow you 
 * `/minscore`: Change the minimum cosine similarity score (from -1.0 for most dissimilar to 1.0 for most similar) to retrieve a document (0.0 by default).
 * `/ragdocsoff`: Disable printing the names of the documents used for RAG.
 * `/ragdocson`: Enable printing the names of the documents used for RAG (shown by default).
-* `/kweb`: Change the number of web pages to be retrieved during web search (1 by default).
+* `/kweb`: Change the number of web pages to be retrieved during web search (3 by default).
 * `/webdocsoff`: Disable printing the names of the web pages used for web search.
 * `/webdocson`: Enable printing the names of the web pages used for web search (shown by default).
 * `/system`: Provide a system prompt to change the behaviour of the LLM (e.g., "When reviewing code, explain what each function does thoroughly, yet in simple terms."). **†**

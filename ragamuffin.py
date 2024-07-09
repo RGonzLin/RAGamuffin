@@ -177,7 +177,7 @@ def RAGamuffin():
     k_docs = 1 # Number of documents to retrieve
     min_score = 0.0 # Minimum similarity score to retrieve a document, orthogonal by default
     rag_docs = True # Show the documents retrieved by RAG if True
-    num_web_results = 1 # Number of web results to retrieve
+    num_web_results = 3 # Number of web results to retrieve
     web_docs = True # Show the webpages retrieved by web search if True
     history = [{
                 "role": "system",

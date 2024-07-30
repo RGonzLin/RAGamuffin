@@ -11,18 +11,17 @@
 * **NEW!** With a simple prompt search the web (via Google) and let the LLM answer all your questions Perplexity-style.
 * Toggle between RAG, web search and conversation modes.
 * Provide a link to a webpage or YouTube video and query the LLM regarding it.
-* Change LLMs on the fly without clearing the conversation history. 
+* Change LLMs on the fly without clearing the conversation history.
+* **Now RAGamuffin is more capable with the addition of `llama3.1` to Ollama, try it out!**
 
 ## Get started 
 1. Download Ollama: `https://ollama.com`.
 2. `pip install ollama PyPDF2 faiss numpy requests beautifulsoup4 youtube_transcript_api google`.
-3. Start Ollama by clicking the App icon, this will not open any window but it will run on the background.
-4. Download some models by typing `ollama pull` followed by the name of the model, in the terminal (I recommend `llama3` for the LLM and `all-minilm` for the embedding model).
-5. Run the script by typing `python ragamuffin.py`.
-6. Choose the default models and documents directory or specify your own.
-7. All done! start chatting about your documents with complete privacy.
+3. Download some models by typing `ollama pull` followed by the name of the model, in the terminal (I recommend `llama3.1` for the LLM and `mxbai-embed-large` for the embedding model).
+4. Run the script by typing `python ragamuffin.py`.
+5. All done! Start chatting about your documents with complete privacy.
 
-After this first setup, you will only need to **start Ollama as explained in step 3**, and then go directly to step 5.  
+After this first setup, you will only need to **start from step 4**.  
 
 ## In the chat
 Simply type to chat with the LLM!  
@@ -43,16 +42,19 @@ There are some magic words however. All of them start with a `/`, and allow you 
 * `/webdocsoff`: Disable printing the names of the web pages used for web search.
 * `/webdocson`: Enable printing the names of the web pages used for web search (shown by default).
 * `/system`: Provide a system prompt to change the behaviour of the LLM (e.g., "When reviewing code, explain what each function does thoroughly, yet in simple terms."). **†**
+* `/magicwords`: List all the magic words. 
 
 ## The models
-The default models are `llama3` (8B) for the LLM, and `all-minilm` (23M) for the embedding model. These are generally good choices, but you might consider some other options depending on your specific needs:
+**You can set up default LLM and embedding models from the `config.json` file**, and setting `Active` to `true`. `llama3.1` (8B) for the LLM, and `all-minilm` (23M) for the embedding model are generally good choices, but you might consider some other options depending on your specific needs:
 * You have many documents and `all-minilm` is not cutting it? Try `mxbai-embed-large` (334M).
 * Your documents are too big and `llama3` simply does not have a big enough context window (8K tokens)? Use `llama3-gradient`; also 8M parameters, but with a context window of over 1M!
 * `llama3` is too dumb? Go for `llama3:70b` if your computer can handle it!
 * Need a tiny model due to hardware constraints? Give `phi3:mini` (3B) a chance.  
 * Too European to run one of them darn American models? `mistral` (7B) is for you!
 
-Be mindful that smaller models, even when documents are able to fit within the context window, might not "remember" long-term information very well, nor perform adequately in needle-in-a-haystack-like tasks, compared to more capable models like GPT-4.
+Be mindful that smaller models, even when documents are able to fit within the context window, might not "remember" long-term information very well, nor perform adequately in needle-in-a-haystack-like tasks, compared to more capable models like GPT-4.  
+
+If you would rather specify the models (and the path to the documents for RAG) each time you start RAGamuffin, set `Active` in the configuration file to `false`. 
 
 ## Some prompts to try
 The `docs` folder contains some sample documents; a Markdown with a couple of recipes, a Python file with an implementation of the game Snake (and yes, you can play it!), and the RAGamuffin file itself. Ask anything relating to these documents... or a webpage... or a YouTube video.   
@@ -91,4 +93,4 @@ After searching the web for a while under normal use, you might encounter a 'too
 "You are RAGamuffin, a Retrieval-Augmented Generation (RAG) agent, that can also search the web, or retrieve text from specific webpages or YouTube videos when a link is provided. You will be provided content in the following format:   
 'user_query   
 <<document1_name><document1_text>>   
-<<document2_name><document2_text>> ...'. Your objective is to generate a response based on the user query and the retrieved document(s), webpage text, or video transcript. If no such resources are provided, you will simply hold a conversation based on the chat history."
+<<document2_name><document2_text>> ...'. Your objective is to generate a response based on the user query and the retrieved document(s), webpage text, or video transcript. If no such resources are provided, you will simply hold a conversation based on the chat history. Today is [Current Date]."

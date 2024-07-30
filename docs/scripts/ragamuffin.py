@@ -2,7 +2,7 @@
 
 import ollama
 import os
-import PyPDF2
+#import PyPDF2 # Yet to be used for PDF extraction
 import faiss
 import numpy as np
 import requests
@@ -10,7 +10,9 @@ from bs4 import BeautifulSoup
 from youtube_transcript_api import YouTubeTranscriptApi
 from googlesearch import search
 import itertools
-
+import re
+from datetime import date
+import json
 
 def extract_text_from_txt(txt_path):
     
@@ -147,29 +149,117 @@ def web_search(query, num_web_results):
 
         return web_page_names, texts
 
+def list_models(available_models_raw): 
+
+    # Split the string into lines
+    lines = available_models_raw.strip().split('\n')
+
+    # Initialize two OrderedDicts to store embedding models and LLMs
+    embedding_models = {}
+    llms = {}
+
+    # Use a regular expression to extract model names from each line
+    embed_count = 1
+    llm_count = 1
+    for line in lines[1:]:  # Skip the header line
+        match = re.match(r'^\s*([\w\-.]+:[\w\-.]+)\s', line)
+        if match:
+            model_name = match.group(1)
+            # Check if the model name contains the word "embed" or "minilm"
+            if "embed" in model_name or "minilm" in model_name:
+                embedding_models[embed_count] = model_name
+                embed_count += 1
+            else:
+                llms[llm_count] = model_name
+                llm_count += 1
+
+    return embedding_models, llms
+
+def selct_llm(llms):
+
+    print("Available LLM models:")
+    for key, value in llms.items():
+        print(f"    {key}: {value}")
+    llm_num = input ("Select the LLM model you want to use (type a number):")
+    # Check if the user input is a valid key
+    while int(llm_num) not in llms.keys():
+        llm_num = input("Please select a valid LLM model number: ")
+    llm = llms[int(llm_num)]
+
+    return llm
+
+def select_embedding_model(embedding_models):
+
+    print("Available embedding models:")
+    for key, value in embedding_models.items():
+        print(f"    {key}: {value}")
+    embedding_model_num = input ("Select the embedding model you want to use (type a number):")
+    # Check if the user input is a valid key
+    while int(embedding_model_num) not in embedding_models.keys():
+        embedding_model_num = input("Please select a valid embedding model number: ")
+    embedding_model = embedding_models[int(embedding_model_num)]
+
+    return embedding_model  
+
+def select_path():
+    
+        # Get the user to input the path to the documents
+        default_docu_path = input("Use default path (docs/)? ([y]/n): ")
+        if default_docu_path != "n":
+            docu_path = "docs/"
+        else:
+            docu_path = input("Enter the path to the documents: ")
+    
+        return docu_path
+
+def select_models_and_path(embedding_models, llms):
+        
+        # Get the user to select the LLM model
+        llm = selct_llm(llms)
+        # Get the user to select the embedding model
+        embedding_model = select_embedding_model(embedding_models)
+        # Get the user to input the path to the documents
+        docu_path = select_path()
+    
+        return llm, embedding_model, docu_path
 
 def RAGamuffin():
 
-    default = input("Use default LLM (llama3), embedding model (all-minilm), and path (docs/)? ([y]/n): ")
+    # Start Ollama and get available models
+    with os.popen('ollama list') as stream:
+        available_models = stream.read()
 
-    if default == "n":
-        # Get the user to setup the models and the documents path
-        llm = input("LLM: ")
-        embedding_model = input("Embedding model: ")
-        docu_path = input("Path to documents : ")
-    
-    else:
-        llm = "llama3"
-        embedding_model = "all-minilm"
-        docu_path = "docs/"
+    # Obtain dictionaries with the available embedding models and LLMs
+    embedding_models, llms = list_models(available_models)
 
+    # Check if a configuration file exists
+    if os.path.exists("config.json"):
+        with open("config.json", 'r') as file:
+            config = json.load(file)
+        # Check if the configuration file is active
+        if config["Active"] == True:
+            # Check if the models and path in the configuration file are valid
+            if config["LLM"] in llms.values() and config["Embedding"] in embedding_models.values():
+                llm = config["LLM"]
+                embedding_model = config["Embedding"]
+                docu_path = config["Path"]
+            # If the models and path in the configuration file are not valid, ask the user for the necessary information
+            else:
+                llm, embedding_model, docu_path = select_models_and_path(embedding_models, llms)
+        # If the configuration file is not active, ask the user for the necessary information
+        else:
+            llm, embedding_model, docu_path = select_models_and_path(embedding_models, llms)
+    # If the configuration file does not exist or is not valid, ask the user for the necessary information
+    else: 
+        llm, embedding_model, docu_path = select_models_and_path(embedding_models, llms)
+
+    # Get the user to select the mode
     mode = input("Do you want to start the conversation in RAG, web search or conversational mode? ([rag]/web/conv): ")
 
+    # Index the documents if the mode is not web or conversational (i.e., RAG mode)
+    indexing_done = False
     if mode != "web" and mode != "conv":
         mode = "rag"
-
-    indexing_done = False
-    if mode == "rag":
         index, doc_names = rag(docu_path,embedding_model)
         indexing_done = True
 
@@ -179,6 +269,10 @@ def RAGamuffin():
     rag_docs = True # Show the documents retrieved by RAG if True
     num_web_results = 3 # Number of web results to retrieve
     web_docs = True # Show the webpages retrieved by web search if True
+    current_date = date.today() # Get the current date
+    formatted_date = current_date.strftime("%Y-%m-%d") # Format the date
+    
+    # Initialize chat history with the system prompt
     history = [{
                 "role": "system",
                 "content": "You are RAGamuffin, a Retrieval-Augmented Generation (RAG) agent, "
@@ -188,13 +282,16 @@ def RAGamuffin():
                 "<<document2_name><document2_text>> ...'. "
                 "Your objective is to generate a response based on the user query and the retrieved document(s), "
                 "webpage text, or video transcript. If no such resources are provided, you will simply hold a conversation based"
-                "on the chat history."
-                }] # Chat history
+                f"on the chat history. Today is {formatted_date}."
+                }] 
 
+    # Main loop
     while True:
 
         print("")
         user_input = input(">> ")
+
+        # MAGIC WORDS
 
         # Exit chat
         if user_input == "/exit":
@@ -281,22 +378,44 @@ def RAGamuffin():
 
         # Change LLM
         elif user_input == "/changellm":
-            llm = input("LLM: ")
-            print(f"Now using {llm}")
+            llm = selct_llm(llms)
+            continue
+
+        # Query a webpage
+        elif user_input == "/interwebs":
+            url = input("URL: ")
+            user_input = input("What do you want to know? >> ")
+            web_text = extract_text_from_webpage(url)
+            user_input = user_input + '\n' + f'<<{url}><{web_text}>>'
+
+        # List magic words
+        elif user_input == "/magicwords" or user_input.startswith("/"):
+            if user_input == "/magicwords":
+                print("Magic words:")
+            else:
+                print("Invalid magic word. Valid magic words:")
+            print("    /exit: Quit the chat")
+            print("    /rag: Activate RAG mode (ON by default)")
+            print("    /web: Activate web search mode")
+            print("    /conv: Activate conversation-only mode")
+            print("    /interwebs: Provide a URL to a webpage or YouTube video and ask questions about it")
+            print("    /itshistory: Clear the chat history")
+            print("    /changellm: Change the LLM model on the fly while preserving the chat history! Allows you to use the best model to handle the specific task at hand!")
+            print("    /kdocs: Change the number of documents to be retrieved for RAG (1 by default)")
+            print("    /minscore: Change the minimum cosine similarity score (from -1.0 for most dissimilar to 1.0 for most similar) to retrieve a document (0.0 by default)")
+            print("    /ragdocsoff: Disable printing the names of the documents used for RAG")
+            print("    /ragdocson: Enable printing the names of the documents used for RAG (shown by default)")
+            print("    /kweb: Change the number of web pages to be retrieved during web search (3 by default)")
+            print("    /webdocsoff: Disable printing the names of the web pages used for web search")
+            print("    /webdocson: Enable printing the names of the web pages used for web search (shown by default)")
+            print("    /system: Provide a system prompt to change the behaviour of the LLM (e.g., 'When reviewing code, explain what each function does thoroughly, yet in simple terms.')")
             continue
 
         # Chat with the LLM
         else:
 
-            # Query a webpage
-            if user_input == "/interwebs":
-                url = input("URL: ")
-                user_input = input("What do you want to know? >> ")
-                web_text = extract_text_from_webpage(url)
-                user_input = user_input + '\n' + f'<<{url}><{web_text}>>'
-
             # Perform RAG if the RAG mode is on
-            elif mode == "rag":
+            if mode == "rag":
                 
                 # Perform the RAG query
                 similar_doc_names, user_input = rag_query(embedding_model, index, doc_names, user_input, k_docs, min_score)
@@ -340,5 +459,8 @@ def RAGamuffin():
                 "content": response_content
             })
 
+# Main function
 if __name__ == "__main__":
+
+    # Start RAGamuffin
     RAGamuffin()

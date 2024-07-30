@@ -1,0 +1,6 @@
+{
+  "Active": false,
+  "LLM": "llama3.1:latest",
+  "Embedding": "mxbai-embed-large:latest",
+  "Path": "/docs"
+}

@@ -62,7 +62,7 @@ The `docs` folder contains some sample documents; a Markdown with a couple of re
 Here are some ideas to get you started:
 
 ### When in RAG mode
-* `>> I am making croquettes, how should I shape them?`
+* `>> How can I bake a cheesecake?`
 * `>> When does a game of snake ends?`
 * `>> What does /changellm do regarding RAGamuffin?`
 

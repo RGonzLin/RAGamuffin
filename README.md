@@ -15,7 +15,7 @@
 
 ## Get started 
 1. Download Ollama: `https://ollama.com`.
-2. `pip install PyPDF2 faiss requests beautifulsoup4 youtube_transcript_api googlesearch-python`.
+2. `pip install ollama PyPDF2 faiss numpy requests beautifulsoup4 youtube_transcript_api google`.
 3. Start Ollama by clicking the App icon, this will not open any window but it will run on the background.
 4. Download some models by typing `ollama pull` followed by the name of the model, in the terminal (I recommend `llama3` for the LLM and `all-minilm` for the embedding model).
 5. Run the script by typing `python ragamuffin.py`.
@@ -39,7 +39,7 @@ There are some magic words however. All of them start with a `/`, and allow you 
 * `/minscore`: Change the minimum cosine similarity score (from -1.0 for most dissimilar to 1.0 for most similar) to retrieve a document (0.0 by default).
 * `/ragdocsoff`: Disable printing the names of the documents used for RAG.
 * `/ragdocson`: Enable printing the names of the documents used for RAG (shown by default).
-* `/kweb`: Change the number of web pages to be retrieved during web search (1 by default).
+* `/kweb`: Change the number of web pages to be retrieved during web search (3 by default).
 * `/webdocsoff`: Disable printing the names of the web pages used for web search.
 * `/webdocson`: Enable printing the names of the web pages used for web search (shown by default).
 * `/system`: Provide a system prompt to change the behaviour of the LLM (e.g., "When reviewing code, explain what each function does thoroughly, yet in simple terms."). **†**

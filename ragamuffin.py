@@ -508,7 +508,7 @@ def RAGamuffin():
             print("    /thinkshow: Show the thinking section in the response")
             print("    /routehide: Hide the routing section in the response (hidden by default)")
             print("    /routeshow: Show the routing section in the response")
-            print("    /minscoreauto: Change the minimum similarity score to retrieve a document in auto mode (0.6 by default)")
+            print("    /minscoreauto: Change the minimum similarity score to overwrite routing with RAG (0.6 by default)")
             print("    /changeroutingllm: Change the routing LLM model on the fly while preserving the chat history! (Same as main LLM by default)")
             continue
 

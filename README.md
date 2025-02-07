@@ -47,7 +47,7 @@ There are some magic words however. All of them start with a `/`, and allow you 
 * `/thinkshow`: Show the thinking section in the response.
 * `/routehide`: Hide the routing section in the response (hidden by default).
 * `/routeshow`: Show the routing section in the response.
-* `/minscoreauto`: Change the minimum similarity score to retrieve a document in auto mode (0.6 by default).
+* `/minscoreauto`: Change the minimum similarity score to overwrite routing with RAG (0.6 by default).
 * `/changeroutingllm`: Change the routing LLM model on the fly while preserving the chat history! (Same as main LLM by default).
 * `/magicwords`: List all the magic words. 
 

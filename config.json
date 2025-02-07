@@ -1,6 +1,7 @@
 {
-  "Active": true,
+  "Active": false,
   "LLM": "deepseek-r1:14b",
+  "Routing_LLM": "deepseek-r1:14b",
   "Embedding": "mxbai-embed-large:latest",
-  "Path": "./docs"
+  "Path": "./docs" 
 }

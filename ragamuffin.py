@@ -79,7 +79,7 @@ def extract_text_from_webpage(url):
         text = ' '.join(main_content.split())
         return text
     except Exception as e:
-        print(f"    Warning: Could not extract text from {url}: {str(e)}")
+        print(f"    Warning: Could not extract text from {url}")
         return None
 
 def rag(docu_path,embedding_model):
@@ -191,7 +191,7 @@ def list_models(available_models_raw):
 
     return embedding_models, llms
 
-def selct_llm(llms):
+def select_llm(llms):
 
     print("Available LLM models:")
     for key, value in llms.items():
@@ -231,7 +231,7 @@ def select_path():
 def select_models_and_path(embedding_models, llms):
         
         # Get the user to select the LLM model
-        llm = selct_llm(llms)
+        llm = select_llm(llms)
         # Get the user to select the embedding model
         embedding_model = select_embedding_model(embedding_models)
         # Get the user to input the path to the documents
@@ -257,17 +257,21 @@ def RAGamuffin():
             # Check if the models and path in the configuration file are valid
             if config["LLM"] in llms.values() and config["Embedding"] in embedding_models.values():
                 llm = config["LLM"]
+                routing_llm = config["Routing_LLM"]
                 embedding_model = config["Embedding"]
                 docu_path = config["Path"]
             # If the models and path in the configuration file are not valid, ask the user for the necessary information
             else:
                 llm, embedding_model, docu_path = select_models_and_path(embedding_models, llms)
+                routing_llm = llm
         # If the configuration file is not active, ask the user for the necessary information
         else:
             llm, embedding_model, docu_path = select_models_and_path(embedding_models, llms)
+            routing_llm = llm
     # If the configuration file does not exist or is not valid, ask the user for the necessary information
     else: 
         llm, embedding_model, docu_path = select_models_and_path(embedding_models, llms)
+        routing_llm = llm
 
     # Get the user to select the mode
     mode = input("Do you want to start the conversation in RAG, web search or conversational mode? ([auto]/rag/web/conv): ")
@@ -293,6 +297,8 @@ def RAGamuffin():
     formatted_date = current_date.strftime("%Y-%m-%d") # Format the date
     hide_thinking = True # Hide the thinking part of the response
     hide_routing = True # Hide the routing part of the response
+    already_ragged = False # Flag to check if a query has already been RAGed
+    min_score_auto = 0.6 # Minimum similarity score overide the router with RAG in auto mode
 
     # Hard-coded system prompt for auto mode router
     auto_hystory = [{
@@ -309,7 +315,7 @@ def RAGamuffin():
                 "    Query: 'Search through my documents and tell me how to prepare a cheesecake.' "
                 "    Response: '<RAG><Cheesecake>' \n"
                 "    Query: 'What is RAG?'"
-                "    Response: \n"
+                "    Response: '' \n"
                 "It modifies interactions with a large language model (LLM) so that the model responds to user queries with reference to a specified set of documents, "
                 "using this information to augment information drawn from its own vast, static training data. This allows LLMs to use domain-specific and/or updated information' \n"
                 "VERY IMPORTANT: Always do this for each new query! For example, if the user asks 'which are the main financial news of today?' you will respond "
@@ -433,7 +439,7 @@ def RAGamuffin():
 
         # Change LLM
         elif user_input == "/changellm":
-            llm = selct_llm(llms)
+            llm = select_llm(llms)
             continue
 
         # Query a webpage
@@ -465,6 +471,17 @@ def RAGamuffin():
             hide_routing = False
             print("Routing section will be shown")
 
+        # Change the minimum similarity score to retrieve a document in auto mode
+        elif user_input == "/minscoreauto":
+            min_score_auto = float(input("Minimum similarity score to retrieve a document in auto mode: "))
+            print(f"Now the minimum similarity score in auto mode is {min_score_auto}")
+            continue
+
+        # Change the routing LLM
+        elif user_input == "/changeroutingllm":
+            routing_llm = select_llm(llms)
+            continue
+
         # List magic words
         elif user_input == "/magicwords" or user_input.startswith("/"):
             if user_input == "/magicwords":
@@ -487,10 +504,12 @@ def RAGamuffin():
             print("    /webdocsoff: Disable printing the names of the web pages used for web search")
             print("    /webdocson: Enable printing the names of the web pages used for web search (shown by default)")
             print("    /system: Provide a system prompt to change the behaviour of the LLM (e.g., 'When reviewing code, explain what each function does thoroughly, yet in simple terms.')")
-            print("    /thinkhide: Hide the thinking section in the response")
-            print("    /thinkshow: Show the thinking section in the response (shown by default)")
-            print("    /routehide: Hide the routing section in the response")
-            print("    /routeshow: Show the routing section in the response (shown by default)")
+            print("    /thinkhide: Hide the thinking section in the response (hidden by default)")
+            print("    /thinkshow: Show the thinking section in the response")
+            print("    /routehide: Hide the routing section in the response (hidden by default)")
+            print("    /routeshow: Show the routing section in the response")
+            print("    /minscoreauto: Change the minimum similarity score to retrieve a document in auto mode (0.6 by default)")
+            print("    /changeroutingllm: Change the routing LLM model on the fly while preserving the chat history! (Same as main LLM by default)")
             continue
 
         # Chat with the LLM
@@ -498,58 +517,66 @@ def RAGamuffin():
 
             if auto_mode == True:
 
-                # Append the user input to the history
-                auto_hystory.append({
-                        "role": "user",
-                        "content": user_input,
-                        })
+                # Overwrite with RAG if a query matches a document
+                similar_doc_names, user_input = rag_query(embedding_model, index, doc_names, user_input, k_docs, min_score_auto)
 
-                # Ask LLM to choose the mode
-                auto_response = ollama.chat(model = llm, messages = auto_hystory, stream = True)
-
-                # Print a routing message if the routing section is hidden
-                if hide_routing == True:
-                    print("    Routing ...")
-
-                # Print the response and concatenate the chunks
-                response_content = ""
-                for chunk in auto_response:
-                    chunk_content = chunk['message']['content']                    
-                    if hide_thinking and chunk_content == "<think>":
-                        if hide_routing == False:
-                            print("    Thinking ...")
-                    if hide_thinking == False or ("</think>" in response_content and chunk != "</think>"):
-                        if hide_routing == False:
-                            print(chunk_content, end='', flush=True)
-                    response_content += chunk_content
-                print("")
-
-                # Eliminate the last user input
-                auto_hystory.pop()
-
-                # Remove the thinking section in case it is present
-                response_content = re.sub(r'<think>.*?</think>', '', response_content)
-
-                # Extract the mode from the response
-                if "<RAG>" in response_content:
+                if similar_doc_names != []:
                     mode = "rag"
-                    extracted_query = re.search(r'<RAG><([^>]*)>', response_content)
-                    extracted_query = extracted_query.group(1) if extracted_query else user_input
-                    print("\n    EXTRACTED QUERY: " + extracted_query + "\n")
-                    # Append both query and response to system prompt for future reference
-                    auto_hystory[0]["content"] = auto_hystory[0]["content"] + f"    Query: '{user_input}' Response: '<RAG><{extracted_query}>' "
-                elif "<web>" in response_content:
-                    mode = "web"
-                    extracted_query = re.search(r'<web><([^>]*)>', response_content)
-                    extracted_query = extracted_query.group(1) if extracted_query else user_input
-                    print("\n    EXTRACTED QUERY: " + extracted_query + "\n")
-                    # Append both query and response to system prompt for future reference
-                    auto_hystory[0]["content"] = auto_hystory[0]["content"] + f"    Query: '{user_input}' Response: '<web><{extracted_query}>' "
-                else:
-                    mode = "conv"
-                    # Append query without response for conversational mode
-                    auto_hystory[0]["content"] = auto_hystory[0]["content"] + f"    Query: '{user_input}' Response: "
+                    already_ragged = True
 
+                else:
+
+                    # Append the user input to the history
+                    auto_hystory.append({
+                            "role": "user",
+                            "content": user_input,
+                            })
+
+                    # Ask LLM to choose the mode
+                    auto_response = ollama.chat(model = routing_llm, messages = auto_hystory, stream = True)
+
+                    # Print a routing message if the routing section is hidden
+                    if hide_routing == True:
+                        print("    Routing ...")
+
+                    # Print the response and concatenate the chunks
+                    response_content = ""
+                    for chunk in auto_response:
+                        chunk_content = chunk['message']['content']                    
+                        if hide_thinking and chunk_content == "<think>":
+                            if hide_routing == False:
+                                print("    Thinking ...")
+                        elif hide_thinking == False or ("</think>" in response_content and chunk != "</think>") or "r1" not in routing_llm: # R1 is the only reasoning model in Ollama so far
+                            if hide_routing == False:
+                                print(chunk_content, end='', flush=True)
+                        response_content += chunk_content
+                    print("")
+
+                    # Eliminate the last user input
+                    auto_hystory.pop()
+
+                    # Remove the thinking section in case it is present
+                    response_content = re.sub(r'<think>.*?</think>', '', response_content)
+
+                    # Extract the mode from the response
+                    if "<RAG>" in response_content:
+                        mode = "rag"
+                        extracted_query = re.search(r'<RAG><([^>]*)>', response_content)
+                        extracted_query = extracted_query.group(1) if extracted_query else user_input
+                        print("\n    EXTRACTED QUERY: " + extracted_query + "\n")
+                        # Append both query and response to system prompt for future reference
+                        auto_hystory[0]["content"] = auto_hystory[0]["content"] + f"    Query: '{user_input}' Response: '<RAG><{extracted_query}>' \n"
+                    elif "<web>" in response_content:
+                        mode = "web"
+                        extracted_query = re.search(r'<web><([^>]*)>', response_content)
+                        extracted_query = extracted_query.group(1) if extracted_query else user_input
+                        print("\n    EXTRACTED QUERY: " + extracted_query + "\n")
+                        # Append both query and response to system prompt for future reference
+                        auto_hystory[0]["content"] = auto_hystory[0]["content"] + f"    Query: '{user_input}' Response: '<web><{extracted_query}>' \n"
+                    else:
+                        mode = "conv"
+                        # Append query without response for conversational mode
+                        auto_hystory[0]["content"] = auto_hystory[0]["content"] + f"    Query: '{user_input}' Response: '' \n"
 
             # Perform RAG if the RAG mode is on
             if mode == "rag":
@@ -557,6 +584,8 @@ def RAGamuffin():
                 # Perform the RAG query
                 if auto_mode == False:
                     similar_doc_names, user_input = rag_query(embedding_model, index, doc_names, user_input, k_docs, min_score)
+                elif already_ragged == True:
+                    already_ragged = False
                 else:
                     similar_doc_names, user_input = rag_query(embedding_model, index, doc_names, extracted_query, k_docs, min_score)
 
@@ -597,7 +626,7 @@ def RAGamuffin():
                 chunk_content = chunk['message']['content']                    
                 if hide_thinking and chunk_content == "<think>":
                     print("    Thinking ...")
-                if hide_thinking == False or ("</think>" in response_content and chunk != "</think>"):
+                elif hide_thinking == False or ("</think>" in response_content and chunk != "</think>") or "r1" not in llm: # R1 is the only reasoning model in Ollama so far
                     print(chunk_content, end='', flush=True)
                 response_content += chunk_content
             print("")

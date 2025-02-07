@@ -323,6 +323,9 @@ def RAGamuffin():
                 f"he is also talking about news, and respond '<web><political news {formatted_date}>'. Of course, take into account that just because a prior question required a web search, "
                 "for example, the next one does not necessarly will require it. It might just be a normal conversational query, for instance. To this end you will have access to past responses here: \n"
                 }] 
+    
+    # Copy the auto mode system prompt in case it needs to be restored
+    auto_hystory_copy = auto_hystory.copy()
 
     # Initialize chat history with the system prompt
     history = [{
@@ -434,6 +437,7 @@ def RAGamuffin():
         # Clear the chat history
         elif user_input == "/itshistory":
             history = [history[0]] # Keep the system prompt
+            auto_hystory = auto_hystory_copy # Restore the system prompt for the router too
             print("Chat history cleared!")
             continue
 

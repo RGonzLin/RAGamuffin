@@ -13,6 +13,7 @@ import itertools
 import re
 from datetime import date
 import json
+import copy
 
 def extract_text_from_txt(txt_path):
     
@@ -325,7 +326,7 @@ def RAGamuffin():
                 }] 
     
     # Copy the auto mode system prompt in case it needs to be restored
-    auto_hystory_copy = auto_hystory.copy()
+    auto_hystory_copy = copy.deepcopy(auto_hystory)
 
     # Initialize chat history with the system prompt
     history = [{

@@ -18,7 +18,7 @@
 ## Get started 
 1. Download Ollama: `https://ollama.com`.
 2. `pip install ollama PyPDF2 faiss-cpu numpy requests beautifulsoup4 youtube_transcript_api googlesearch-python`.
-3. Download some models by typing `ollama pull` followed by the name of the model, in the terminal (I recommend `llama3.1` for the LLM and `mxbai-embed-large` for the embedding model).
+3. Download some models by typing `ollama pull` followed by the name of the model, in the terminal (I recommend `deepseek-r1:14b` for the LLM and `mxbai-embed-large` for the embedding model).
 4. Run the script by typing `python ragamuffin.py`.
 5. All done! Start chatting about your documents with complete privacy.
 

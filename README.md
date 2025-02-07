@@ -8,15 +8,16 @@
 ## Key features
 * Load your favourite LLM and embedding model from Ollama.
 * With the power of Retrieval-Augmented Generation (RAG), ask questions to the LLM about your documents... **LOCALLY!**
-* **NEW!** With a simple prompt search the web (via Google) and let the LLM answer all your questions Perplexity-style.
-* Toggle between RAG, web search and conversation modes.
+* With a simple prompt search the web (via Google) and let the LLM answer all your questions Perplexity-style.
+* Toggle between RAG, web search and conversation modes or even better, with the **ALL NEW automatic mode** let a routing agent decide the best response method based on your query.
 * Provide a link to a webpage or YouTube video and query the LLM regarding it.
 * Change LLMs on the fly without clearing the conversation history.
-* **Now RAGamuffin is more capable with the addition of `llama3.1` to Ollama, try it out!**
+* The all mighty `deepseek-r1:14b` is here and enables routing to work like a charm! China has entered the game! 🇨🇳
+* Europe is not far behind with their newest, super-high-tech... non-detachable bottle caps! 🇪🇺
 
 ## Get started 
 1. Download Ollama: `https://ollama.com`.
-2. `pip install ollama PyPDF2 faiss numpy requests beautifulsoup4 youtube_transcript_api googlesearch-python`.
+2. `pip install ollama PyPDF2 faiss-cpu numpy requests beautifulsoup4 youtube_transcript_api googlesearch-python`.
 3. Download some models by typing `ollama pull` followed by the name of the model, in the terminal (I recommend `llama3.1` for the LLM and `mxbai-embed-large` for the embedding model).
 4. Run the script by typing `python ragamuffin.py`.
 5. All done! Start chatting about your documents with complete privacy.
@@ -42,24 +43,35 @@ There are some magic words however. All of them start with a `/`, and allow you 
 * `/webdocsoff`: Disable printing the names of the web pages used for web search.
 * `/webdocson`: Enable printing the names of the web pages used for web search (shown by default).
 * `/system`: Provide a system prompt to change the behaviour of the LLM (e.g., "When reviewing code, explain what each function does thoroughly, yet in simple terms."). **†**
+* `/thinkhide`: Hide the thinking section in the response (hidden by default).
+* `/thinkshow`: Show the thinking section in the response.
+* `/routehide`: Hide the routing section in the response (hidden by default).
+* `/routeshow`: Show the routing section in the response.
+* `/minscoreauto`: Change the minimum similarity score to retrieve a document in auto mode (0.6 by default).
+* `/changeroutingllm`: Change the routing LLM model on the fly while preserving the chat history! (Same as main LLM by default).
 * `/magicwords`: List all the magic words. 
 
 ## The models
-**You can set up default LLM and embedding models from the `config.json` file**, and setting `Active` to `true`. `llama3.1` (8B) for the LLM, and `all-minilm` (23M) for the embedding model are generally good choices, but you might consider some other options depending on your specific needs:
+**You can set up default LLM and embedding models from the `config.json` file**, and setting `Active` to `true`. `llama3.1` (8B) or `deepseek-r1:14b` for the LLM, and `all-minilm` (23M) for the embedding model are generally good choices, but you might consider some other options depending on your specific needs:
 * You have many documents and `all-minilm` is not cutting it? Try `mxbai-embed-large` (334M).
 * Your documents are too big and `llama3` simply does not have a big enough context window (8K tokens)? Use `llama3-gradient`; also 8M parameters, but with a context window of over 1M!
 * `llama3` is too dumb? Go for `llama3:70b` if your computer can handle it!
 * Need a tiny model due to hardware constraints? Give `phi3:mini` (3B) a chance.  
 * Too European to run one of them darn American models? `mistral` (7B) is for you!
+* For reasoning tasks, and for the routing LLM, the best choice is to go a bit communist with `deepseek-r1:14b`!
 
 Be mindful that smaller models, even when documents are able to fit within the context window, might not "remember" long-term information very well, nor perform adequately in needle-in-a-haystack-like tasks, compared to more capable models like GPT-4.  
 
-If you would rather specify the models (and the path to the documents for RAG) each time you start RAGamuffin, set `Active` in the configuration file to `false`. 
+If you would rather not specify the models (and the path to the documents for RAG) each time you start RAGamuffin, set `Active` in the configuration file to `true`. 
 
 ## Some prompts to try
 The `docs` folder contains some sample documents; a Markdown with a couple of recipes, a Python file with an implementation of the game Snake (and yes, you can play it!), and the RAGamuffin file itself. Ask anything relating to these documents... or a webpage... or a YouTube video.   
 
 Here are some ideas to get you started:
+
+### When in auto mode
+* `>> Which are the latest financial news of the day?`
+* `>> Is there a script implementing the game Snake in Python somewhere in my documents?`
 
 ### When in RAG mode
 * `>> How can I bake a cheesecake?`
@@ -77,19 +89,39 @@ Here are some ideas to get you started:
  `URL: https://www.youtube.com/watch?v=PtfatBOlHIA`  
  `What do you want to know? >> What is this video about?`
 
+### And here is an example of a user prompt and the response when in auto mode
+```
+>> Which are the latest news regarding European non-detachable bottle caps?
+    Routing ...
+
+
+    EXTRACTED QUERY: European non-detachable bottle caps 2025-02-07
+
+    Googled webpage(s): ['https://www.euronews.com/green/2024/07/02/why-are-bottle-caps-attached-to-the-bottle-inside-the-eu-directive-causing-drink-spills-ev', 'https://murciatoday.com/plastic-bottles-change-again-in-2025-after-attached-bottle-caps-eu-introduces-another-new-rule_1000184000-a.html', 'https://www.environmentenergyleader.com/stories/how-the-eus-bottle-cap-requirement-is-shaping-plastic-waste-management,48395']
+
+    Thinking ...
+
+
+The European Union introduced a new rule in July 2024 requiring plastic bottle caps to remain attached to their containers as part of efforts to reduce single-use plastic waste. This regulation is designed to decrease litter and make recycling more efficient since consumers are less likely to discard caps if they cannot easily remove them from the bottles.
+
+In Spain, this rule has been in effect for some time, but there may be additional changes or updates regarding plastic bottle management as of 2025. However, specific details about these changes were not provided in the documents you shared. For further information on Spain's upcoming regulations, it would be best to consult official sources or news outlets specializing in Spanish environmental policies.
+
+In summary, the EU's rule mandates that bottle caps must remain attached during the product's intended use stage, and Spain is also adopting similar measures as part of its efforts to manage plastic waste effectively.
+```
+... we are truly living in the future! 🇪🇺
+
 ## Notes
 
 ### Troubleshooting 
 After searching the web for a while under normal use, you might encounter a 'too many requests' HTTP error from Google. This can be easily circumvented by switching IPs using a VPN.
 
 ### Upcoming planned features
-* An 'Automatic Mode' which intelligently determines the best response method (RAG, web search or conversation) based on the user's query.
 * PDF support.
 * Include a magic word so that users can add new UTF-8 encoded document extensions to be processed by RAG. Without modifying the Python script, the extensions '.txt', '.md', '.py', '.sh', and '.js' will be processed by RAG in this current version.
 
 
 
-**†** The deafault system prompt is:  
+**†** The default system prompt is:  
 "You are RAGamuffin, a Retrieval-Augmented Generation (RAG) agent, that can also search the web, or retrieve text from specific webpages or YouTube videos when a link is provided. You will be provided content in the following format:   
 'user_query   
 <<document1_name><document1_text>>   

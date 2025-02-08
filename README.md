@@ -42,7 +42,7 @@ There are some magic words however. All of them start with a `/`, and allow you 
 * `/kweb`: Change the number of web pages to be retrieved during web search (3 by default).
 * `/webdocsoff`: Disable printing the names of the web pages used for web search.
 * `/webdocson`: Enable printing the names of the web pages used for web search (shown by default).
-* `/system`: Provide a system prompt to change the behaviour of the LLM (e.g., "When reviewing code, explain what each function does thoroughly, yet in simple terms."). [**†**](notes-system-prompt)
+* `/system`: Provide a system prompt to change the behaviour of the LLM (e.g., "When reviewing code, explain what each function does thoroughly, yet in simple terms."). **†**
 * `/thinkhide`: Hide the thinking section in the response (hidden by default).
 * `/thinkshow`: Show the thinking section in the response.
 * `/routehide`: Hide the routing section in the response (hidden by default).

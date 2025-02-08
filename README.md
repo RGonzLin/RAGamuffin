@@ -42,7 +42,7 @@ There are some magic words however. All of them start with a `/`, and allow you 
 * `/kweb`: Change the number of web pages to be retrieved during web search (3 by default).
 * `/webdocsoff`: Disable printing the names of the web pages used for web search.
 * `/webdocson`: Enable printing the names of the web pages used for web search (shown by default).
-* `/system`: Provide a system prompt to change the behaviour of the LLM (e.g., "When reviewing code, explain what each function does thoroughly, yet in simple terms."). **†**
+* `/system`: Provide a system prompt to change the behaviour of the LLM (e.g., "When reviewing code, explain what each function does thoroughly, yet in simple terms."). [**†**](notes-system-prompt)
 * `/thinkhide`: Hide the thinking section in the response (hidden by default).
 * `/thinkshow`: Show the thinking section in the response.
 * `/routehide`: Hide the routing section in the response (hidden by default).
@@ -118,9 +118,9 @@ After searching the web for a while under normal use, you might encounter a 'too
 ### Upcoming planned features
 * PDF support.
 * Include a magic word so that users can add new UTF-8 encoded document extensions to be processed by RAG. Without modifying the Python script, the extensions '.txt', '.md', '.py', '.sh', and '.js' will be processed by RAG in this current version.
+* Running models from the terminal has some charm to it, and makes you feel like you are Matthew Broderick in the 1983 classic *WarGame* (Gen-Zers, please click [here](https://www.youtube.com/watch?v=U2_h-EFlztY))... but a GUI maybe?
 
-
-
+### System prompt
 **†** The default system prompt is:  
 "You are RAGamuffin, a Retrieval-Augmented Generation (RAG) agent, that can also search the web, or retrieve text from specific webpages or YouTube videos when a link is provided. You will be provided content in the following format:   
 'user_query   

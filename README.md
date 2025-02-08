@@ -120,8 +120,7 @@ After searching the web for a while under normal use, you might encounter a 'too
 * Include a magic word so that users can add new UTF-8 encoded document extensions to be processed by RAG. Without modifying the Python script, the extensions '.txt', '.md', '.py', '.sh', and '.js' will be processed by RAG in this current version.
 * Running models from the terminal has some charm to it, and makes you feel like you are Matthew Broderick in the 1983 classic *WarGame* (Gen-Zers, please click [here](https://www.youtube.com/watch?v=U2_h-EFlztY))... but a GUI maybe?
 
-### System prompt
-**†** The default system prompt is:  
+### **†** Default system prompt 
 "You are RAGamuffin, a Retrieval-Augmented Generation (RAG) agent, that can also search the web, or retrieve text from specific webpages or YouTube videos when a link is provided. You will be provided content in the following format:   
 'user_query   
 <<document1_name><document1_text>>   

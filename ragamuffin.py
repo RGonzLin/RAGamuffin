@@ -1,4 +1,4 @@
- # RAGamuffin by Rodrigo González Linares
+# RAGamuffin by Rodrigo González Linares
 
 import ollama
 import os
@@ -273,6 +273,9 @@ def RAGamuffin():
     else: 
         llm, embedding_model, docu_path = select_models_and_path(embedding_models, llms)
         routing_llm = llm
+
+    # Initialize auto_mode with default value
+    auto_mode = False
 
     # Get the user to select the mode
     mode = input("Do you want to start the conversation in RAG, web search or conversational mode? ([auto]/rag/web/conv): ")

@@ -14,6 +14,8 @@ import re
 from datetime import date
 import json
 import copy
+import pickle
+import hashlib
 
 def extract_text_from_txt(txt_path):
     
@@ -83,7 +85,40 @@ def extract_text_from_webpage(url):
         print(f"    Warning: Could not extract text from {url}")
         return None
 
-def rag(docu_path,embedding_model):
+def get_index_paths(docu_path):
+    # Create a hash of the document path to use in filenames
+    path_hash = hashlib.md5(docu_path.encode()).hexdigest()[:10]
+    
+    # Create indexes directory if it doesn't exist
+    os.makedirs("indexes", exist_ok=True)
+    
+    # Generate paths for index and mapping files
+    index_path = f"indexes/faiss_index_{path_hash}"
+    mapping_path = f"indexes/faiss_doc_names_{path_hash}.pkl"
+    
+    return index_path, mapping_path
+
+def check_existing_indexes(docu_path):
+    index_path, mapping_path = get_index_paths(docu_path)
+    return os.path.exists(index_path) and os.path.exists(mapping_path)
+
+def load_indexes(docu_path):
+    index_path, mapping_path = get_index_paths(docu_path)
+    
+    # Load FAISS index
+    index = faiss.read_index(index_path)
+    
+    # Load document names mapping
+    with open(mapping_path, "rb") as f:
+        doc_names = pickle.load(f)
+        
+    return index, doc_names
+
+def rag(docu_path, embedding_model, force_reindex=False):
+    # Check if indexes already exist for this path
+    if not force_reindex and check_existing_indexes(docu_path):
+        print("Loading existing indexes...")
+        return load_indexes(docu_path)
 
     print("Extracting texts")
 
@@ -118,6 +153,14 @@ def rag(docu_path,embedding_model):
     # Add vectors to the index
     index.add(doc_embeddings)
 
+    # Save index and document names mapping
+    index_path, mapping_path = get_index_paths(docu_path)
+    faiss.write_index(index, index_path)
+    
+    # Save document names mapping to a pickle file
+    with open(mapping_path, "wb") as f:
+        pickle.dump(doc_names, f)
+
     print("Done! Let's RAG!")
 
     return index, doc_names
@@ -129,21 +172,26 @@ def rag_query(embedding_model, index, doc_names, user_input, k_docs, min_score):
 
     # Check the query is not empty
     if query:
-
         # Process the query
         query = np.array([query], dtype=np.float32)
         faiss.normalize_L2(query)
 
+        # Create subset indices if needed (example: searching only within specific documents)
+        # This approach allows for more flexible filtering in the future
+        valid_indices = list(range(index.ntotal))
+        
         # Search for the most similar documents
         distances, indices = index.search(query, k_docs)
 
         # Filter out documents with similarity scores below the threshold
-        indices = indices[0][distances[0] > min_score]
-
+        mask = distances[0] > min_score
+        filtered_indices = indices[0][mask]
+        
         # Retrieve the texts of the most similar documents
-        similar_doc_names = [doc_names[i] for i in indices]
+        similar_doc_names = [doc_names[i] for i in filtered_indices if i < len(doc_names)]
+        
         # If there are similar documents
-        if indices.size > 0:
+        if len(similar_doc_names) > 0:
             # Concatenate the texts of the most similar documents spacing them with a newline
             similar_docs_text = '\n'.join([f'<<{doc}><{extract_text_from_txt(doc)}>>' for doc in similar_doc_names])
             # Concatenate the query and the text of the most similar documents
@@ -280,15 +328,29 @@ def RAGamuffin():
     # Get the user to select the mode
     mode = input("Do you want to start the conversation in RAG, web search or conversational mode? ([auto]/rag/web/conv): ")
 
-    # Index the documents if the mode is not web or conversational (i.e., RAG mode)
+    # Check if indexes already exist for the selected path
+    force_reindex = False
     indexing_done = False
+    
     if mode != "web" and mode != "conv":
         if mode != "rag":
             auto_mode = True
         else:
             auto_mode = False
         mode = "rag"
-        index, doc_names = rag(docu_path,embedding_model)
+        
+        # Check if indexes exist for this path
+        if check_existing_indexes(docu_path):
+            print(f"Found existing indexes for path: {docu_path}")
+            reindex_response = input("Do you want to re-index? (y/[n]): ")
+            if reindex_response.lower() == 'y':
+                force_reindex = True
+                index, doc_names = rag(docu_path, embedding_model, force_reindex)
+            else:
+                index, doc_names = load_indexes(docu_path)
+        else:
+            index, doc_names = rag(docu_path, embedding_model)
+        
         indexing_done = True
 
     # Initialize parameters
@@ -357,10 +419,28 @@ def RAGamuffin():
             print("Bye!")
             break
 
+        # Force reindex
+        elif user_input == "/reindex":
+            if mode == "rag" or auto_mode == True:
+                print("Re-indexing documents...")
+                index, doc_names = rag(docu_path, embedding_model, force_reindex=True)
+                indexing_done = True
+                print("Re-indexing complete!")
+            else:
+                print("Cannot re-index in current mode. Please switch to RAG or auto mode first.")
+            continue
+
         # Turn auto mode on
         elif user_input == "/auto":
             auto_mode = True
             print("Auto mode ON")
+            # Check if indexing needs to be done
+            if indexing_done == False:
+                if check_existing_indexes(docu_path):
+                    index, doc_names = load_indexes(docu_path)
+                else:
+                    index, doc_names = rag(docu_path, embedding_model)
+                indexing_done = True
             continue
 
         # Turn RAG on
@@ -369,7 +449,10 @@ def RAGamuffin():
             auto_mode = False
             print("RAG ON")
             if indexing_done == False:
-                index, doc_names = rag(docu_path,embedding_model)
+                if check_existing_indexes(docu_path):
+                    index, doc_names = load_indexes(docu_path)
+                else:
+                    index, doc_names = rag(docu_path, embedding_model)
                 indexing_done = True
             continue
 
@@ -490,6 +573,22 @@ def RAGamuffin():
             routing_llm = select_llm(llms)
             continue
 
+        # Change the document path
+        elif user_input == "/chpath":
+            docu_path = select_path()
+            # Check if indexes exist for the new path
+            if check_existing_indexes(docu_path):
+                print(f"Found existing indexes for path: {docu_path}")
+                reindex_response = input("Do you want to re-index? (y/[n]): ")
+                if reindex_response.lower() == 'y':
+                    index, doc_names = rag(docu_path, embedding_model, force_reindex=True)
+                else:
+                    index, doc_names = load_indexes(docu_path)
+            else:
+                index, doc_names = rag(docu_path, embedding_model)
+            indexing_done = True
+            continue
+
         # List magic words
         elif user_input == "/magicwords" or user_input.startswith("/"):
             if user_input == "/magicwords":
@@ -501,6 +600,8 @@ def RAGamuffin():
             print("    /rag: Activate RAG mode")
             print("    /web: Activate web search mode")
             print("    /conv: Activate conversation-only mode")
+            print("    /reindex: Force re-indexing of the current document path")
+            print("    /chpath: Change the document path and update indexes")
             print("    /interwebs: Provide a URL to a webpage or YouTube video and ask questions about it")
             print("    /itshistory: Clear the chat history")
             print("    /changellm: Change the LLM model on the fly while preserving the chat history! Allows you to use the best model to handle the specific task at hand!")

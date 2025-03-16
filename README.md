@@ -12,7 +12,7 @@
 * Toggle between RAG, web search and conversation modes or even better, with the **ALL NEW automatic mode** let a routing agent decide the best response method based on your query.
 * Provide a link to a webpage or YouTube video and query the LLM regarding it.
 * Change LLMs on the fly without clearing the conversation history.
-* The all mighty `deepseek-r1:14b` is here and enables routing to work like a charm! China has entered the game! 🇨🇳
+* The all mighty `deepseek-r1:14b` (available also in other sizes) is here and enables routing to work like a charm! China has entered the game! 🇨🇳
 * Europe is not far behind with their newest, super-high-tech... non-detachable bottle caps! 🇪🇺
 
 ## Get started 
@@ -65,7 +65,7 @@ Be mindful that smaller models, even when documents are able to fit within the c
 If you would rather not specify the models (and the path to the documents for RAG) each time you start RAGamuffin, set `Active` in the configuration file to `true`. 
 
 ## Some prompts to try
-The `docs` folder contains some sample documents; a Markdown with a couple of recipes, a Python file with an implementation of the game Snake (and yes, you can play it!), and the RAGamuffin file itself. Ask anything relating to these documents... or a webpage... or a YouTube video.   
+The `docs` folder contains some sample documents; a Markdown with a couple of recipes, a Python file with an implementation of the game Snake (and yes, you can play it!), and the RAGamuffin file itself if you set the RAG path to the RAGamuffin root directory (i.e., `./`). Ask anything relating to these documents... or a webpage... or a YouTube video.   
 
 Here are some ideas to get you started:
 
@@ -76,7 +76,7 @@ Here are some ideas to get you started:
 ### When in RAG mode
 * `>> How can I bake a cheesecake?`
 * `>> When does a game of snake ends?`
-* `>> What does /changellm do regarding RAGamuffin?`
+* `>> What does /changellm do regarding RAGamuffin?` (if you set the RAG path to the RAGamuffin root directory `./`)
 
 ### When in web search mode
 * `>> What are the most important news stories of today?`
@@ -118,10 +118,9 @@ After searching the web for a while under normal use, you might encounter a 'too
 ### Upcoming planned features
 * PDF support.
 * Include a magic word so that users can add new UTF-8 encoded document extensions to be processed by RAG. Without modifying the Python script, the extensions '.txt', '.md', '.py', '.sh', and '.js' will be processed by RAG in this current version.
+* Running models from the terminal has some charm to it, and makes you feel like you are Matthew Broderick in the 1983 classic *WarGame* (Gen-Zers, please click [here](https://www.youtube.com/watch?v=U2_h-EFlztY))... but a GUI maybe?
 
-
-
-**†** The default system prompt is:  
+### **†** Default system prompt 
 "You are RAGamuffin, a Retrieval-Augmented Generation (RAG) agent, that can also search the web, or retrieve text from specific webpages or YouTube videos when a link is provided. You will be provided content in the following format:   
 'user_query   
 <<document1_name><document1_text>>   

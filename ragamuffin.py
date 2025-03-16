@@ -277,16 +277,36 @@ def select_path():
     
         return docu_path
 
-def select_models_and_path(embedding_models, llms):
-        
-        # Get the user to select the LLM model
-        llm = select_llm(llms)
-        # Get the user to select the embedding model
-        embedding_model = select_embedding_model(embedding_models)
-        # Get the user to input the path to the documents
+def setup_rag(embedding_model, docu_path=None, force_reindex=False):
+    """Set up RAG capabilities by getting path if needed and creating/loading index"""
+    
+    # Get path if not provided
+    if docu_path is None:
         docu_path = select_path()
     
-        return llm, embedding_model, docu_path
+    # Check if indexes exist for this path
+    if check_existing_indexes(docu_path) and not force_reindex:
+        print(f"Found existing indexes for path: {docu_path}")
+        reindex_response = input("Do you want to re-index? (y/[n]): ")
+        if reindex_response.lower() == 'y':
+            force_reindex = True
+            index, doc_names = rag(docu_path, embedding_model, force_reindex)
+        else:
+            index, doc_names = load_indexes(docu_path)
+    else:
+        index, doc_names = rag(docu_path, embedding_model, force_reindex)
+    
+    return index, doc_names, docu_path
+
+def select_models_and_path(embedding_models, llms):
+    """Select LLM and embedding model, path is now optional and handled separately"""
+    
+    # Get the user to select the LLM model
+    llm = select_llm(llms)
+    # Get the user to select the embedding model
+    embedding_model = select_embedding_model(embedding_models)
+    
+    return llm, embedding_model
 
 def RAGamuffin():
 
@@ -297,61 +317,62 @@ def RAGamuffin():
     # Obtain dictionaries with the available embedding models and LLMs
     embedding_models, llms = list_models(available_models)
 
+    # Variables to track RAG setup
+    rag_available = False  # Tracks if RAG is currently available/set up
+    rag_path_provided = False  # Tracks if a RAG path has been provided
+    docu_path = None  # Will store the RAG document path once provided
+    index = None  # Will store the FAISS index once created
+    doc_names = None  # Will store document names once indexed
+    
+    # Get the user to select the mode first
+    mode = input("Do you want to start the conversation in RAG, web search or conversational mode? ([auto]/rag/web/conv): ")
+
+    # Initialize LLM first (needed for all modes)
     # Check if a configuration file exists
     if os.path.exists("config.json"):
         with open("config.json", 'r') as file:
             config = json.load(file)
         # Check if the configuration file is active
         if config["Active"] == True:
-            # Check if the models and path in the configuration file are valid
+            # Check if the models in the configuration file are valid
             if config["LLM"] in llms.values() and config["Embedding"] in embedding_models.values():
                 llm = config["LLM"]
                 routing_llm = config["Routing_LLM"]
                 embedding_model = config["Embedding"]
-                docu_path = config["Path"]
-            # If the models and path in the configuration file are not valid, ask the user for the necessary information
+                # Only use path from config if it's a RAG mode
+                if mode == "rag" or (mode != "web" and mode != "conv"):
+                    docu_path = config["Path"]
+                    rag_path_provided = True
+            # If the models in the configuration file are not valid, ask the user
             else:
-                llm, embedding_model, docu_path = select_models_and_path(embedding_models, llms)
+                llm, embedding_model = select_models_and_path(embedding_models, llms)
                 routing_llm = llm
-        # If the configuration file is not active, ask the user for the necessary information
+        # If the configuration file is not active, ask the user
         else:
-            llm, embedding_model, docu_path = select_models_and_path(embedding_models, llms)
+            llm, embedding_model = select_models_and_path(embedding_models, llms)
             routing_llm = llm
-    # If the configuration file does not exist or is not valid, ask the user for the necessary information
+    # If the configuration file does not exist or is not valid, ask the user
     else: 
-        llm, embedding_model, docu_path = select_models_and_path(embedding_models, llms)
+        llm, embedding_model = select_models_and_path(embedding_models, llms)
         routing_llm = llm
 
-    # Initialize auto_mode with default value
+    # Initialize auto_mode based on the selected mode
     auto_mode = False
-
-    # Get the user to select the mode
-    mode = input("Do you want to start the conversation in RAG, web search or conversational mode? ([auto]/rag/web/conv): ")
-
-    # Check if indexes already exist for the selected path
-    force_reindex = False
-    indexing_done = False
-    
-    if mode != "web" and mode != "conv":
-        if mode != "rag":
-            auto_mode = True
-        else:
-            auto_mode = False
-        mode = "rag"
-        
-        # Check if indexes exist for this path
-        if check_existing_indexes(docu_path):
-            print(f"Found existing indexes for path: {docu_path}")
-            reindex_response = input("Do you want to re-index? (y/[n]): ")
-            if reindex_response.lower() == 'y':
-                force_reindex = True
-                index, doc_names = rag(docu_path, embedding_model, force_reindex)
-            else:
-                index, doc_names = load_indexes(docu_path)
-        else:
-            index, doc_names = rag(docu_path, embedding_model)
-        
-        indexing_done = True
+    if mode != "rag" and mode != "web" and mode != "conv":
+        auto_mode = True
+        mode = "auto"
+        # For auto mode, ask if user wants to include RAG capabilities
+        include_rag = input("Do you want to include RAG capabilities in auto mode? ([y]/n): ")
+        if include_rag.lower() != 'n':
+            # Set up RAG if requested
+            index, doc_names, docu_path = setup_rag(embedding_model, docu_path if rag_path_provided else None)
+            rag_available = True
+            rag_path_provided = True
+    elif mode == "rag":
+        # Set up RAG for RAG mode
+        index, doc_names, docu_path = setup_rag(embedding_model, docu_path if rag_path_provided else None)
+        rag_available = True
+        rag_path_provided = True
 
     # Initialize parameters
     k_docs = 1 # Number of documents to retrieve
@@ -421,39 +442,67 @@ def RAGamuffin():
 
         # Force reindex
         elif user_input == "/reindex":
-            if mode == "rag" or auto_mode == True:
+            if not rag_available:
+                print("RAG is not currently set up. Use /activaterag to set up RAG first.")
+            else:
                 print("Re-indexing documents...")
                 index, doc_names = rag(docu_path, embedding_model, force_reindex=True)
-                indexing_done = True
                 print("Re-indexing complete!")
+            continue
+
+        # Activate RAG in any mode
+        elif user_input == "/activaterag":
+            if not rag_available:
+                print("Setting up RAG capabilities...")
+                index, doc_names, docu_path = setup_rag(embedding_model, docu_path if rag_path_provided else None)
+                rag_available = True
+                rag_path_provided = True
+                print("RAG capabilities have been activated!")
+                
+                # If in auto mode, we don't need to switch modes
+                if not auto_mode:
+                    print("Switching to RAG mode...")
+                    mode = "rag"
+                    auto_mode = False
             else:
-                print("Cannot re-index in current mode. Please switch to RAG or auto mode first.")
+                print("RAG capabilities are already available.")
+            continue
+
+        # Deactivate RAG in any mode
+        elif user_input == "/deactivaterag":
+            if rag_available:
+                rag_available = False
+                print("RAG capabilities have been deactivated.")
+                
+                # If in RAG mode (but not auto mode), switch to conversational mode
+                if mode == "rag" and not auto_mode:
+                    print("Switching to conversational mode since RAG is now disabled...")
+                    mode = "conv"
+                elif auto_mode:
+                    print("Auto mode will continue without RAG capabilities.")
+            else:
+                print("RAG capabilities are already disabled.")
             continue
 
         # Turn auto mode on
         elif user_input == "/auto":
             auto_mode = True
+            mode = "auto"
             print("Auto mode ON")
-            # Check if indexing needs to be done
-            if indexing_done == False:
-                if check_existing_indexes(docu_path):
-                    index, doc_names = load_indexes(docu_path)
-                else:
-                    index, doc_names = rag(docu_path, embedding_model)
-                indexing_done = True
             continue
 
         # Turn RAG on
         elif user_input == "/rag":
+            # If RAG not available, set it up first
+            if not rag_available:
+                print("Setting up RAG capabilities...")
+                index, doc_names, docu_path = setup_rag(embedding_model)
+                rag_available = True
+                rag_path_provided = True
+            
             mode = "rag"
             auto_mode = False
             print("RAG ON")
-            if indexing_done == False:
-                if check_existing_indexes(docu_path):
-                    index, doc_names = load_indexes(docu_path)
-                else:
-                    index, doc_names = rag(docu_path, embedding_model)
-                indexing_done = True
             continue
 
         # Turn web search on
@@ -468,6 +517,26 @@ def RAGamuffin():
             mode = "conv"
             auto_mode = False
             print("Conversational mode ON")
+            continue
+
+        # Change the document path
+        elif user_input == "/chpath":
+            old_path = docu_path
+            docu_path = select_path()
+            
+            # Check if indexes exist for the new path
+            if check_existing_indexes(docu_path):
+                print(f"Found existing indexes for path: {docu_path}")
+                reindex_response = input("Do you want to re-index? (y/[n]): ")
+                if reindex_response.lower() == 'y':
+                    index, doc_names = rag(docu_path, embedding_model, force_reindex=True)
+                else:
+                    index, doc_names = load_indexes(docu_path)
+            else:
+                index, doc_names = rag(docu_path, embedding_model)
+            
+            rag_available = True
+            rag_path_provided = True
             continue
 
         # Change the number of documents to retrieve
@@ -573,22 +642,6 @@ def RAGamuffin():
             routing_llm = select_llm(llms)
             continue
 
-        # Change the document path
-        elif user_input == "/chpath":
-            docu_path = select_path()
-            # Check if indexes exist for the new path
-            if check_existing_indexes(docu_path):
-                print(f"Found existing indexes for path: {docu_path}")
-                reindex_response = input("Do you want to re-index? (y/[n]): ")
-                if reindex_response.lower() == 'y':
-                    index, doc_names = rag(docu_path, embedding_model, force_reindex=True)
-                else:
-                    index, doc_names = load_indexes(docu_path)
-            else:
-                index, doc_names = rag(docu_path, embedding_model)
-            indexing_done = True
-            continue
-
         # List magic words
         elif user_input == "/magicwords" or user_input.startswith("/"):
             if user_input == "/magicwords":
@@ -600,6 +653,8 @@ def RAGamuffin():
             print("    /rag: Activate RAG mode")
             print("    /web: Activate web search mode")
             print("    /conv: Activate conversation-only mode")
+            print("    /activaterag: Set up RAG capabilities (useful for auto mode)")
+            print("    /deactivaterag: Disable RAG capabilities in any mode (useful for auto mode)")
             print("    /reindex: Force re-indexing of the current document path")
             print("    /chpath: Change the document path and update indexes")
             print("    /interwebs: Provide a URL to a webpage or YouTube video and ask questions about it")
@@ -625,16 +680,18 @@ def RAGamuffin():
         else:
 
             if auto_mode == True:
+                # First check if RAG is available and query matches a document with high similarity
+                if rag_available:
+                    # Overwrite with RAG if a query matches a document
+                    similar_doc_names, modified_input = rag_query(embedding_model, index, doc_names, user_input, k_docs, min_score_auto)
 
-                # Overwrite with RAG if a query matches a document
-                similar_doc_names, user_input = rag_query(embedding_model, index, doc_names, user_input, k_docs, min_score_auto)
+                    if similar_doc_names != []:
+                        mode = "rag"
+                        already_ragged = True
+                        user_input = modified_input  # Use the modified input with RAG content
 
-                if similar_doc_names != []:
-                    mode = "rag"
-                    already_ragged = True
-
-                else:
-
+                # If RAG wasn't used, continue with normal auto mode routing
+                if not already_ragged:
                     # Append the user input to the history
                     auto_hystory.append({
                             "role": "user",
@@ -642,7 +699,7 @@ def RAGamuffin():
                             })
 
                     # Ask LLM to choose the mode
-                    auto_response = ollama.chat(model = routing_llm, messages = auto_hystory, stream = True)
+                    auto_response = ollama.chat(model=routing_llm, messages=auto_hystory, stream=True)
 
                     # Print a routing message if the routing section is hidden
                     if hide_routing == True:
@@ -655,7 +712,7 @@ def RAGamuffin():
                         if hide_thinking and chunk_content == "<think>":
                             if hide_routing == False:
                                 print("    Thinking ...")
-                        elif hide_thinking == False or ("</think>" in response_content and chunk != "</think>") or "r1" not in routing_llm: # R1 is the only reasoning model in Ollama so far
+                        elif hide_thinking == False or ("</think>" in response_content and chunk != "</think>") or "r1" not in routing_llm:
                             if hide_routing == False:
                                 print(chunk_content, end='', flush=True)
                         response_content += chunk_content
@@ -669,6 +726,13 @@ def RAGamuffin():
 
                     # Extract the mode from the response
                     if "<RAG>" in response_content:
+                        # If RAG is requested but not available, set it up
+                        if not rag_available:
+                            print("\nRAG is required but not set up. Setting up RAG capabilities...")
+                            index, doc_names, docu_path = setup_rag(embedding_model)
+                            rag_available = True
+                            rag_path_provided = True
+                        
                         mode = "rag"
                         extracted_query = re.search(r'<RAG><([^>]*)>', response_content)
                         extracted_query = extracted_query.group(1) if extracted_query else user_input
@@ -689,15 +753,21 @@ def RAGamuffin():
 
             # Perform RAG if the RAG mode is on
             if mode == "rag":
+                # Verify RAG is available, set it up if not
+                if not rag_available:
+                    print("RAG mode requires setup. Setting up RAG capabilities...")
+                    index, doc_names, docu_path = setup_rag(embedding_model)
+                    rag_available = True
+                    rag_path_provided = True
                 
                 # Perform the RAG query
                 if auto_mode == False:
                     similar_doc_names, user_input = rag_query(embedding_model, index, doc_names, user_input, k_docs, min_score)
                 elif already_ragged == True:
                     already_ragged = False
+                    # The user_input has already been modified with RAG content
                 else:
                     similar_doc_names, user_input = rag_query(embedding_model, index, doc_names, extracted_query, k_docs, min_score)
-
 
                 # Show the documents retrieved if the flag is on
                 if rag_docs:
@@ -706,7 +776,6 @@ def RAGamuffin():
 
             # Query the web if the web search mode is on
             elif mode == "web":
-
                 # Search the web
                 if auto_mode == False:
                     web_page_names, user_input = web_search(user_input, num_web_results)
@@ -723,8 +792,6 @@ def RAGamuffin():
                     "role": "user",
                     "content": user_input,
                     })
-                
-            #if auto_mode == False or (auto_mode == True and mode != "conv"):
 
             # Get the response with the LLM
             response = ollama.chat(model = llm, messages = history, stream = True)
@@ -735,7 +802,7 @@ def RAGamuffin():
                 chunk_content = chunk['message']['content']                    
                 if hide_thinking and chunk_content == "<think>":
                     print("    Thinking ...")
-                elif hide_thinking == False or ("</think>" in response_content and chunk != "</think>") or "r1" not in llm: # R1 is the only reasoning model in Ollama so far
+                elif hide_thinking == False or ("</think>" in response_content and chunk != "</think>") or "r1" not in llm:
                     print(chunk_content, end='', flush=True)
                 response_content += chunk_content
             print("")

@@ -14,6 +14,7 @@
 * Change LLMs on the fly without clearing the conversation history.
 * The all mighty `deepseek-r1:14b` (available also in other sizes) is here and enables routing to work like a charm! China has entered the game! 🇨🇳
 * Europe is not far behind with their newest, super-high-tech... non-detachable bottle caps! 🇪🇺
+* **NEW!** Smart indexing system that saves and reuses document indexes for faster startups.
 
 ## Get started 
 1. Download Ollama: `https://ollama.com`.
@@ -28,9 +29,14 @@ After this first setup, you will only need to **start from step 4**.
 Simply type to chat with the LLM!  
 
 There are some magic words however. All of them start with a `/`, and allow you to perform special actions:
-* `/rag`: Activate RAG mode (ON by default).
+* `/rag`: Activate RAG mode.
 * `/web`: Activate web search mode.
 * `/conv`: Activate conversation-only mode.
+* `/auto`: Activate automatic routing mode (default).
+* `/activaterag`: Set up RAG capabilities in any mode (useful for auto mode).
+* `/deactivaterag`: Disable RAG capabilities in any mode (again, useful for auto mode).
+* `/reindex`: Force re-indexing of the current document path.
+* `/chpath`: Change the document path and update indexes.
 * `/interwebs`: Provide a URL to a webpage or YouTube video and ask questions about it. 
 * `/itshistory`: Clear the chat history.
 * `/changellm`: Change the LLM model on the fly while preserving the chat history! Allows you to use the best model to handle the specific task at hand!
@@ -63,6 +69,13 @@ There are some magic words however. All of them start with a `/`, and allow you 
 Be mindful that smaller models, even when documents are able to fit within the context window, might not "remember" long-term information very well, nor perform adequately in needle-in-a-haystack-like tasks, compared to more capable models like GPT-4.  
 
 If you would rather not specify the models (and the path to the documents for RAG) each time you start RAGamuffin, set `Active` in the configuration file to `true`. 
+
+## Performance Improvements
+RAGamuffin now saves document indexes in an `/indexes` folder for faster startups:
+* Indexes are automatically saved after first creation
+* When you restart with the same document path, indexes are reused
+* Use `/reindex` to force regeneration of indexes when documents change
+* Change document paths anytime with `/chpath` without restarting
 
 ## Some prompts to try
 The `docs` folder contains some sample documents; a Markdown with a couple of recipes, a Python file with an implementation of the game Snake (and yes, you can play it!), and the RAGamuffin file itself if you set the RAG path to the RAGamuffin root directory (i.e., `./`). Ask anything relating to these documents... or a webpage... or a YouTube video.   

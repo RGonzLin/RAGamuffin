@@ -7,7 +7,8 @@ import faiss
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
-from youtube_transcript_api import YouTubeTranscriptApi
+import youtube_transcript_api
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 from googlesearch import search
 import itertools
 import re
@@ -41,49 +42,78 @@ def extract_text_from_directory(directory):
 
     return documents
 
-def get_youtube_id(url):
-    
-    # Finding the start index of the video ID
-    start_index = url.find('v=') + 2
+def extract_youtube_id(url):
+    """Extract YouTube video ID from URL."""
+    if "youtube.com/watch" in url:
+        video_id = url.split("v=")[1].split("&")[0]
+        return video_id
+    elif "youtu.be" in url:
+        video_id = url.split("youtu.be/")[1].split("?")[0]
+        return video_id
+    return None
 
-    return url[start_index:]
+def get_youtube_transcript(url):
+    """Extract transcript from a YouTube video."""
+    try:
+        video_id = extract_youtube_id(url)
+        if not video_id:
+            return None, "Not a valid YouTube URL"
+        
+        transcript = youtube_transcript_api.YouTubeTranscriptApi.get_transcript(video_id)
+        if not transcript:
+            return None, "No transcript available for this video"
+            
+        full_text = " ".join([entry["text"] for entry in transcript])
+        return full_text, None
+    except TranscriptsDisabled:
+        return None, "Transcripts are disabled for this video"
+    except NoTranscriptFound:
+        return None, "No transcript found for this video"
+    except Exception as e:
+        return None, f"Error extracting YouTube transcript: {str(e)}"
 
 def extract_text_from_webpage(url):
+    """Extract text content from a general webpage."""
     try:
-        # YouTube handling remains the same
-        if "youtube.com" in url:
-            video_id = get_youtube_id(url)
-            transcript = YouTubeTranscriptApi.get_transcript(video_id)
-            text = ' '.join([entry['text'] for entry in transcript])
-            return text
-
-        # Modified webpage handling
-        request = requests.get(url)
-        soup = BeautifulSoup(request.text, 'html.parser')
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
         
-        # Remove unwanted elements
-        for tag in soup(['script', 'style', 'nav', 'header', 'footer', 'aside']):
-            tag.decompose()
+        soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Try to find main content
-        main_content = None
-        content_elements = soup.select('article, [role="main"], main, .content, #content')
-        
-        if content_elements:
-            main_content = content_elements[0].get_text(separator=' ', strip=True)
-        elif soup.body:
-            # Fallback to body if no content containers found
-            main_content = soup.body.get_text(separator=' ', strip=True)
-        else:
-            # If no body is found, return None
-            return None
+        # Remove script and style elements
+        for script_or_style in soup(["script", "style"]):
+            script_or_style.decompose()
+            
+        # Get text content
+        text = soup.get_text(separator=' ', strip=True)
         
         # Clean up whitespace
-        text = ' '.join(main_content.split())
-        return text
+        lines = (line.strip() for line in text.splitlines())
+        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+        text = '\n'.join(chunk for chunk in chunks if chunk)
+        
+        return text, None
+    except requests.exceptions.RequestException as e:
+        return None, f"Error fetching webpage: {str(e)}"
     except Exception as e:
-        print(f"    Warning: Could not extract text from {url}")
-        return None
+        return None, f"Error processing webpage content: {str(e)}"
+
+def get_web_content(url):
+    """Extract content from a URL (YouTube or general webpage)."""
+    if "youtube.com" in url or "youtu.be" in url:
+        content, error = get_youtube_transcript(url)
+        source_type = "YouTube transcript"
+    else:
+        content, error = extract_text_from_webpage(url)
+        source_type = "webpage"
+        
+    if content:
+        return content, source_type, None
+    else:
+        return None, source_type, error
 
 def get_index_paths(docu_path):
     # Create a hash of the document path to use in filenames
@@ -536,9 +566,104 @@ def RAGamuffin():
         # Query a webpage
         elif user_input == "/interwebs":
             url = input("URL: ")
-            user_input = input("What do you want to know? >> ")
-            web_text = extract_text_from_webpage(url)
-            user_input = user_input + '\n' + f'<<{url}><{web_text}>>'
+            question = input("What do you want to know? >> ")
+            
+            # Extract content from the URL using the improved get_web_content function
+            content, source_type, error = get_web_content(url)
+            
+            if error:
+                print(f"    Warning: {error}")
+                # Add to history so the LLM is aware of the error
+                history.append({
+                    "role": "user", 
+                    "content": f"I tried to access {url} to answer: '{question}', but encountered an error: {error}"
+                })
+                
+                # Get the response with the LLM
+                response = ollama.chat(model=llm, messages=history, stream=True)
+                
+                # Print the response and concatenate the chunks
+                response_content = ""
+                for chunk in response:
+                    chunk_content = chunk['message']['content']                    
+                    if hide_thinking and chunk_content == "<think>":
+                        print("    Thinking ...")
+                    elif hide_thinking == False or ("</think>" in response_content and chunk != "</think>") or "r1" not in llm:
+                        print(chunk_content, end='', flush=True)
+                    response_content += chunk_content
+                print("")
+                
+                # Append the entire response as a single message
+                history.append({
+                    "role": "assistant",
+                    "content": response_content
+                })
+                continue
+            
+            if not content or len(content.strip()) == 0:
+                print(f"    Warning: No content extracted from {url}")
+                history.append({
+                    "role": "user", 
+                    "content": f"I tried to access {url} to answer: '{question}', but couldn't extract any meaningful content"
+                })
+                
+                # Get the response with the LLM
+                response = ollama.chat(model=llm, messages=history, stream=True)
+                
+                # Print the response and concatenate the chunks
+                response_content = ""
+                for chunk in response:
+                    chunk_content = chunk['message']['content']                    
+                    if hide_thinking and chunk_content == "<think>":
+                        print("    Thinking ...")
+                    elif hide_thinking == False or ("</think>" in response_content and chunk != "</think>") or "r1" not in llm:
+                        print(chunk_content, end='', flush=True)
+                    response_content += chunk_content
+                print("")
+                
+                # Append the entire response as a single message
+                history.append({
+                    "role": "assistant",
+                    "content": response_content
+                })
+                continue
+            
+            # Format the prompt with the extracted content
+            formatted_input = f"""
+            The following is content from a {source_type} at {url}:
+            
+            {content}
+            
+            Based on the above content, please answer this question: {question}
+            """
+            print("    Processing content from web page...")
+            
+            # Add to history
+            history.append({
+                "role": "user",
+                "content": formatted_input
+            })
+            
+            # Get the response with the LLM
+            response = ollama.chat(model=llm, messages=history, stream=True)
+            
+            # Print the response and concatenate the chunks
+            response_content = ""
+            for chunk in response:
+                chunk_content = chunk['message']['content']                    
+                if hide_thinking and chunk_content == "<think>":
+                    print("    Thinking ...")
+                elif hide_thinking == False or ("</think>" in response_content and chunk != "</think>") or "r1" not in llm:
+                    print(chunk_content, end='', flush=True)
+                response_content += chunk_content
+            print("")
+            
+            # Append the entire response as a single message
+            history.append({
+                "role": "assistant",
+                "content": response_content
+            })
+            continue
 
         # Toggle off showing the thinking section
         elif user_input == "/thinkhide":
